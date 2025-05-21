@@ -56,12 +56,6 @@ $check_out = isset($_GET['check_out']) ? $_GET['check_out'] : date('Y-m-d 12:00'
             padding: 40px;
             border-radius: 10px;
         }
-        .search-form {
-            background-color: rgba(255, 255, 255, 0.9);
-            padding: 30px;
-            border-radius: 10px;
-            color: #333;
-        }
         .search-form h3 {
             color: #d4a017;
             margin-bottom: 20px;
