@@ -9,7 +9,7 @@ $adults = isset($_GET['adults']) ? (int)$_GET['adults'] : 2;
 $children = isset($_GET['children']) ? (int)$_GET['children'] : 0;
 $room_type = isset($_GET['room_type']) ? $_GET['room_type'] : '';
 $city = isset($_GET['city']) ? $_GET['city'] : '';
-$max_price = isset($_GET['max_price']) ? (float)$_GET['max_price'] : 0;
+$max_price = isset($_GET['max_price']) && $_GET['max_price'] !== '' ? (float)$_GET['max_price'] : 0;
 
 // Build the SQL query
 $sql = "SELECT r.*, h.name as hotel_name, h.city, h.address, h.image_url as hotel_image
@@ -53,6 +53,15 @@ $where_conditions[] = "r.capacity >= ?";
 $params[] = $adults + $children;
 $types .= "i";
 
+// // Add debug output if debug parameter is set
+// if (isset($_GET['debug'])) {
+//     echo "SQL Query: " . $sql . "<br>";
+//     echo "Parameters: ";
+//     print_r($params);
+//     echo "<br>Types: " . $types . "<br>";
+//     echo "Max Price: " . $max_price . "<br>";
+// }
+
 if (!empty($where_conditions)) {
     $sql .= " WHERE " . implode(" AND ", $where_conditions);
 }
@@ -63,6 +72,9 @@ if (!empty($params)) {
 }
 mysqli_stmt_execute($stmt);
 $result = mysqli_stmt_get_result($stmt);
+
+// Check if any rooms were found
+$rooms_found = mysqli_num_rows($result) > 0;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -450,7 +462,7 @@ $result = mysqli_stmt_get_result($stmt);
             <div class="row">
                 <!-- Room Cards (Right Side) -->
                 <div class="container">
-                    <?php if (mysqli_num_rows($result) > 0): ?>
+                    <?php if ($rooms_found): ?>
                         <?php while($room = mysqli_fetch_assoc($result)): ?>
                             <div class="room-card">
                                 <img src="<?php echo htmlspecialchars($room['image_url']); ?>" class="card-img-left" alt="<?php echo htmlspecialchars($room['room_type']); ?>" onerror="this.src='https://images.unsplash.com/photo-1618773928121-c32242e63f39';">
@@ -515,7 +527,11 @@ $result = mysqli_stmt_get_result($stmt);
                         <?php endwhile; ?>
                     <?php else: ?>
                         <div class="alert alert-info">
-                            No rooms available for the selected criteria. Please try different dates or room type.
+                            <?php if ($max_price > 0): ?>
+                                No rooms available within the price range of PKR <?php echo number_format($max_price, 2); ?>. Please try a higher price range.
+                            <?php else: ?>
+                                No rooms available for the selected criteria. Please try different dates or room type.
+                            <?php endif; ?>
                         </div>
                     <?php endif; ?>
                 </div>
