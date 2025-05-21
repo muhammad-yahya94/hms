@@ -392,17 +392,17 @@ $result = mysqli_stmt_get_result($stmt);
                                     ?>
                                 </select>
                             </div>
-                            <div class="form-group col-mb-6">
+                            <div class="form-group mt-2">
                                 <label for="check_in">Check-in Date & Time</label>
                                 <input type="datetime-local" class="form-control" id="check_in" name="check_in" 
                                        value="<?php echo htmlspecialchars($check_in); ?>" required>
                             </div>
-                            <div class="form-group col-mb-6">
+                            <div class="form-group mt-2">
                                 <label for="check_out">Check-out Date & Time</label>
                                 <input type="datetime-local" class="form-control" id="check_out" name="check_out" 
                                        value="<?php echo htmlspecialchars($check_out); ?>" required>
                             </div>
-                            <div class="row mb-3">
+                            <div class="row mb-3 mt-2">
                                  <div class="col-md-4">
                                     <label for="room_type" class="form-label">Room Type</label>
                                     <select class="form-select" id="room_type" name="room_type">
@@ -448,68 +448,6 @@ $result = mysqli_stmt_get_result($stmt);
         <div class="container">
             <h2 class="text-center mb-5">Explore Our Luxurious Rooms</h2>
             <div class="row">
-                <!-- Filter Form (Left Side)
-                <div class="col-lg-3">
-                    <div class="search-form">
-                        <h3 class="text-center">Filter Rooms</h3>
-                        <form action="room-list.php" method="GET">
-                            <div class="mb-3">
-                                <label for="city" class="form-label">City Name</label>
-                                <select class="form-select" id="city" name="city">
-                                    <option value="">All Cities</option>
-                                    <?php
-                                    $cities_sql = "SELECT DISTINCT city FROM hotels ORDER BY city";
-                                    $cities_result = mysqli_query($conn, $cities_sql);
-                                    while ($city_row = mysqli_fetch_assoc($cities_result)) {
-                                        $selected = ($city == $city_row['city']) ? 'selected' : '';
-                                        echo '<option value="' . htmlspecialchars($city_row['city']) . '"' . $selected . '>' . htmlspecialchars($city_row['city']) . '</option>';
-                                    }
-                                    ?>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="check_in">Check-in Date & Time</label>
-                                <input type="datetime-local" class="form-control" id="check_in" name="check_in" required>
-                            </div>
-                            <div class="form-group">
-                                <label for="check_out">Check-out Date & Time</label>
-                                <input type="datetime-local" class="form-control" id="check_out" name="check_out" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="room_type" class="form-label">Room Type</label>
-                                <select class="form-select" id="room_type" name="room_type">
-                                    <option value="">All Room Types</option>
-                                    <?php
-                                    $room_types_sql = "SELECT DISTINCT room_type FROM rooms ORDER BY room_type";
-                                    $room_types_result = mysqli_query($conn, $room_types_sql);
-                                    while($type_row = mysqli_fetch_assoc($room_types_result)) {
-                                        $selected = ($room_type == $type_row['room_type']) ? 'selected' : '';
-                                        echo "<option value='" . htmlspecialchars($type_row['room_type']) . "' $selected>" . htmlspecialchars(ucfirst($type_row['room_type'])) . "</option>";
-                                    }
-                                    ?>
-                                </select>
-                            </div>
-                            <div class="mb-3">
-                                <label for="adults" class="form-label">Adults</label>
-                                <input type="number" class="form-control" id="adults" name="adults" 
-                                       min="1" max="4" value="<?php echo htmlspecialchars($adults); ?>" required>
-                            </div>
-                            <div class="mb-3">
-                                <label for="children" class="form-label">Children</label>
-                                <input type="number" class="form-control" id="children" name="children" 
-                                       min="0" max="3" value="<?php echo htmlspecialchars($children); ?>" required>
-                            </div>
-                             <div class="mb-3">
-                                <label for="max_price" class="form-label">Room Price</label>
-                                <input type="number" class="form-control" id="max_price" name="max_price" 
-                                       min="0" placeholder="Enter  price" value="<?php echo htmlspecialchars($max_price > 0 ? $max_price : ''); ?>">
-                            </div>
-                            <button type="submit" class="btn btn-booking">
-                                Apply Filters <i class="fas fa-filter ms-2"></i>
-                            </button>
-                        </form>
-                    </div>
-                </div> -->
                 <!-- Room Cards (Right Side) -->
                 <div class="container">
                     <?php if (mysqli_num_rows($result) > 0): ?>

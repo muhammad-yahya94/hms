@@ -281,15 +281,15 @@ $check_out = isset($_GET['check_out']) ? $_GET['check_out'] : date('Y-m-d 12:00'
                                     ?>
                                 </select>
                             </div>
-                            <div class="form-group">
+                            <div class="form-group mt-2">
                                 <label for="check_in">Check-in Date & Time</label>
                                 <input type="datetime-local" class="form-control" id="check_in" name="check_in" required>
                             </div>
-                            <div class="form-group">
+                            <div class="form-group mt-2">
                                 <label for="check_out">Check-out Date & Time</label>
                                 <input type="datetime-local" class="form-control" id="check_out" name="check_out" required>
                             </div>
-                            <div class="row mb-3">
+                            <div class="row mb-3 mt-2">
                                  <div class="col-md-4">
                                     <label for="room_type" class="form-label">Room Type</label>
                                     <select class="form-select" id="room_type" name="room_type">
