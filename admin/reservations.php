@@ -8,6 +8,12 @@ requireAdmin();
 $error = '';
 $success = '';
 
+// Get filter parameters
+$user_id = isset($_GET['user_id']) ? (int)$_GET['user_id'] : null;
+$status_filter = isset($_GET['status']) ? mysqli_real_escape_string($conn, $_GET['status']) : '';
+$date_from_filter = isset($_GET['date_from']) ? mysqli_real_escape_string($conn, $_GET['date_from']) : '';
+$date_to_filter = isset($_GET['date_to']) ? mysqli_real_escape_string($conn, $_GET['date_to']) : '';
+
 // Add required columns if they don't exist
 $required_columns = [
     'status' => "ALTER TABLE bookings ADD COLUMN status VARCHAR(20) DEFAULT 'pending'",
@@ -69,7 +75,7 @@ if (isset($_POST['update_status'])) {
     }
 }
 
-// Get all bookings with related information
+// Build the SQL query
 $sql = "SELECT b.*, h.name as hotel_name, r.room_type, u.username, u.email
         FROM bookings b 
         JOIN hotels h ON b.hotel_id = h.id 
@@ -77,25 +83,55 @@ $sql = "SELECT b.*, h.name as hotel_name, r.room_type, u.username, u.email
         JOIN users u ON b.user_id = u.id 
         WHERE 1=1";
 
+$params = array();
+$types = "";
+
+if ($user_id !== null) {
+    $sql .= " AND b.user_id = ?";
+    $params[] = $user_id;
+    $types .= "i";
+    // Fetch username for the title if filtering by user
+    $user_sql = "SELECT username FROM users WHERE id = ? LIMIT 1";
+    $user_stmt = mysqli_prepare($conn, $user_sql);
+    mysqli_stmt_bind_param($user_stmt, "i", $user_id);
+    mysqli_stmt_execute($user_stmt);
+    $user_result = mysqli_stmt_get_result($user_stmt);
+    $user_row = mysqli_fetch_assoc($user_result);
+    $username_filter = $user_row ? " for " . htmlspecialchars($user_row['username']) : '';
+} else {
+    $username_filter = '';
+}
+
 // Add status filter
-if (isset($_GET['status']) && !empty($_GET['status'])) {
-    $status = mysqli_real_escape_string($conn, $_GET['status']);
-    $sql .= " AND b.booking_status = '$status'";
+if (!empty($status_filter)) {
+    $sql .= " AND b.booking_status = ?";
+    $params[] = $status_filter;
+    $types .= "s";
 }
 
 // Add date range filter
-if (isset($_GET['date_from']) && !empty($_GET['date_from'])) {
-    $date_from = mysqli_real_escape_string($conn, $_GET['date_from']);
-    $sql .= " AND b.check_in_date >= '$date_from'";
+if (!empty($date_from_filter)) {
+    $sql .= " AND b.check_in_date >= ?";
+    $params[] = $date_from_filter;
+    $types .= "s";
 }
 
-if (isset($_GET['date_to']) && !empty($_GET['date_to'])) {
-    $date_to = mysqli_real_escape_string($conn, $_GET['date_to']);
-    $sql .= " AND b.check_in_date <= '$date_to'";
+if (!empty($date_to_filter)) {
+    $sql .= " AND b.check_in_date <= ?";
+    $params[] = $date_to_filter;
+    $types .= "s";
 }
 
-$sql .= " ORDER BY b.created_at DESC";
-$bookings = mysqli_query($conn, $sql);
+$sql .= " ORDER BY b.booking_status = 'pending' DESC, b.created_at DESC";
+
+$stmt = mysqli_prepare($conn, $sql);
+
+if (!empty($params)) {
+    mysqli_stmt_bind_param($stmt, $types, ...$params);
+}
+
+mysqli_stmt_execute($stmt);
+$bookings = mysqli_stmt_get_result($stmt);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -226,9 +262,7 @@ $bookings = mysqli_query($conn, $sql);
 
             <!-- Main Content -->
             <div class="col-md-9 col-lg-10 main-content">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h2>Reservation Management</h2>
-                </div>
+                <h2 class="mb-4">Reservation Management<?php echo $username_filter; ?></h2>
 
                 <?php if ($error): ?>
                     <div class="alert alert-danger"><?php echo $error; ?></div>

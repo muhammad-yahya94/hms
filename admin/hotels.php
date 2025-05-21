@@ -41,30 +41,69 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_hotel'])) {
     $description = trim($_POST['description']);
     $address = trim($_POST['address']);
     $city = trim($_POST['city']);
-    $country = trim($_POST['country']);
     $phone = trim($_POST['phone']);
     $email = trim($_POST['email']);
     $website = trim($_POST['website']);
-    $image_url = trim($_POST['image_url']);
+    // $image_url = trim($_POST['image_url']); // Removed URL handling
     
-    if (empty($name) || empty($address) || empty($city) || empty($country)) {
+    // Handle image upload
+    $image_path = null; // Initialize image_path as null
+    if (isset($_FILES['hotel_image']) && $_FILES['hotel_image']['error'] === UPLOAD_ERR_OK) {
+        $upload_dir = '../uploads/hotels/';
+        // Create directory if it doesn't exist
+        if (!is_dir($upload_dir)) {
+            mkdir($upload_dir, 0777, true);
+        }
+        $file_extension = strtolower(pathinfo($_FILES['hotel_image']['name'], PATHINFO_EXTENSION));
+        $allowed_extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+        
+        if (in_array($file_extension, $allowed_extensions)) {
+            $new_filename = uniqid('hotel_') . '.' . $file_extension;
+            $upload_path = $upload_dir . $new_filename;
+            
+            if (move_uploaded_file($_FILES['hotel_image']['tmp_name'], $upload_path)) {
+                $image_path = 'uploads/hotels/' . $new_filename; // Path to save in database
+            } else {
+                $error = "Error uploading image.";
+            }
+        } else {
+            $error = "Invalid file type. Allowed types: JPG, JPEG, PNG, GIF, WEBP";
+        }
+    } else if (isset($_POST['hotel_id'])) {
+        // If editing and no new file uploaded, retain existing image path
+        $hotel_id = (int)$_POST['hotel_id'];
+        $sql = "SELECT image_url FROM hotels WHERE id = ?";
+        $stmt = mysqli_prepare($conn, $sql);
+        mysqli_stmt_bind_param($stmt, "i", $hotel_id);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        $row = mysqli_fetch_assoc($result);
+        if ($row && !empty($row['image_url'])) {
+            $image_path = $row['image_url'];
+        }
+    }
+
+    
+    if (empty($name) || empty($address) || empty($city)) {
         $error = "Required fields cannot be empty.";
+    } else if (!empty($error)) {
+        // Error already set during file upload
     } else {
         if (isset($_POST['hotel_id'])) {
             // Update existing hotel
             $hotel_id = (int)$_POST['hotel_id'];
-            $sql = "UPDATE hotels SET name = ?, description = ?, address = ?, city = ?, country = ?, 
-                    phone = ?, email = ?, website = ?, image_url = ? WHERE id = ?";
+            $sql = "UPDATE hotels SET name = ?, description = ?, address = ?, city = ?, 
+                    phone = ?, email = ?, website = ?, image_url = ? WHERE id = ?"; // Updated SQL
             $stmt = mysqli_prepare($conn, $sql);
-            mysqli_stmt_bind_param($stmt, "sssssssssi", $name, $description, $address, $city, 
-                                 $country, $phone, $email, $website, $image_url, $hotel_id);
+            mysqli_stmt_bind_param($stmt, "sssssssi", $name, $description, $address, $city, 
+                                 $phone, $email, $website, $image_path, $hotel_id); // Updated parameters
         } else {
             // Add new hotel
-            $sql = "INSERT INTO hotels (name, description, address, city, country, phone, email, website, image_url) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            $sql = "INSERT INTO hotels (name, description, address, city, phone, email, website, image_url) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)"; // Updated SQL
             $stmt = mysqli_prepare($conn, $sql);
-            mysqli_stmt_bind_param($stmt, "sssssssss", $name, $description, $address, $city, 
-                                 $country, $phone, $email, $website, $image_url);
+            mysqli_stmt_bind_param($stmt, "ssssssss", $name, $description, $address, $city, 
+                                 $phone, $email, $website, $image_path); // Updated parameters
         }
         
         if (mysqli_stmt_execute($stmt)) {
@@ -240,7 +279,7 @@ $hotels = mysqli_query($conn, $sql);
                                 <h4><?php echo htmlspecialchars($hotel['name']); ?></h4>
                                 <p class="text-muted">
                                     <i class="fas fa-map-marker-alt"></i> 
-                                    <?php echo htmlspecialchars($hotel['city'] . ', ' . $hotel['country']); ?>
+                                    <?php echo htmlspecialchars($hotel['city']); ?>
                                 </p>
                                 <p><?php echo htmlspecialchars(substr($hotel['description'], 0, 100)) . '...'; ?></p>
                                 <div class="d-flex gap-2">
@@ -273,7 +312,7 @@ $hotels = mysqli_query($conn, $sql);
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <form method="POST" action="" id="hotelForm">
+                    <form method="POST" action="" id="hotelForm" enctype="multipart/form-data">
                         <input type="hidden" name="hotel_id" id="hotel_id">
                         <div class="row">
                             <div class="col-md-6 mb-3">
@@ -281,8 +320,11 @@ $hotels = mysqli_query($conn, $sql);
                                 <input type="text" class="form-control" id="name" name="name" required>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="image_url" class="form-label">Image URL</label>
-                                <input type="url" class="form-control" id="image_url" name="image_url">
+                                <label for="hotel_image" class="form-label">Hotel Image</label>
+                                <input type="file" class="form-control" id="hotel_image" name="hotel_image" accept="image/*">
+                                <div id="current_image_preview" class="mt-2" style="display: none;">
+                                    <img src="" alt="Current Hotel Image" class="img-thumbnail" style="max-height: 100px;">
+                                </div>
                             </div>
                         </div>
                         <div class="mb-3">
@@ -297,10 +339,6 @@ $hotels = mysqli_query($conn, $sql);
                             <div class="col-md-6 mb-3">
                                 <label for="city" class="form-label">City *</label>
                                 <input type="text" class="form-control" id="city" name="city" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="country" class="form-label">Country *</label>
-                                <input type="text" class="form-control" id="country" name="country" required>
                             </div>
                         </div>
                         <div class="row">
@@ -336,12 +374,25 @@ $hotels = mysqli_query($conn, $sql);
             document.getElementById('description').value = hotel.description;
             document.getElementById('address').value = hotel.address;
             document.getElementById('city').value = hotel.city;
-            document.getElementById('country').value = hotel.country;
             document.getElementById('phone').value = hotel.phone;
             document.getElementById('email').value = hotel.email;
             document.getElementById('website').value = hotel.website;
-            document.getElementById('image_url').value = hotel.image_url;
+            // document.getElementById('image_url').value = hotel.image_url; // Removed URL line
             
+            // Handle existing image display for editing
+            const currentImagePreview = document.getElementById('current_image_preview');
+            const currentImage = currentImagePreview.querySelector('img');
+            if (hotel.image_url) {
+                currentImage.src = '../' + hotel.image_url; // Assuming image_url is relative path
+                currentImagePreview.style.display = 'block';
+            } else {
+                currentImage.src = '';
+                currentImagePreview.style.display = 'none';
+            }
+            
+            // Clear the file input when opening for edit
+            document.getElementById('hotel_image').value = '';
+
             new bootstrap.Modal(document.getElementById('hotelModal')).show();
         }
     </script>

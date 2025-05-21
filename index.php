@@ -272,7 +272,7 @@ while ($row = mysqli_fetch_assoc($result)) {
                         <h3 class="text-center">Find Your Perfect Stay</h3>
                         <form action="room-list.php" method="GET" class="search-form">
                             <div class="mb-3">
-                                <label for="city" class="form-label">Location</label>
+                                <label for="city" class="form-label">City Name</label>
                                 <select class="form-select" id="city" name="city">
                                     <option value="">All Cities</option>
                                     <?php
@@ -284,42 +284,44 @@ while ($row = mysqli_fetch_assoc($result)) {
                                     ?>
                                 </select>
                             </div>
-                            <div class="mb-3">
-                                <label for="check-in" class="form-label">Check-In</label>
-                                <input type="date" class="form-control" id="check-in" name="check_in" 
-                                       required min="<?php echo date('Y-m-d'); ?>" value="<?php echo date('Y-m-d'); ?>">
-                            </div>
-                            <div class="mb-3">
-                                <label for="check-out" class="form-label">Check-Out</label>
-                                <input type="date" class="form-control" id="check-out" name="check_out" 
-                                       required min="<?php echo date('Y-m-d', strtotime('+1 day')); ?>" value="<?php echo date('Y-m-d', strtotime('+1 day')); ?>">
-                            </div>
                             <div class="row mb-3">
                                 <div class="col-md-6">
-                                    <label for="adults" class="form-label">Adults</label>
-                                    <input type="number" class="form-control" id="adults" name="adults" 
-                                           min="1" max="4" value="2" required>
+                                    <label for="check-in" class="form-label">Check-in Date & Time</label>
+                                    <input type="date" class="form-control" id="check-in" name="check_in" 
+                                           required min="<?php echo date('Y-m-d'); ?>" value="<?php echo date('Y-m-d'); ?>">
                                 </div>
                                 <div class="col-md-6">
-                                    <label for="children" class="form-label">Children</label>
-                                    <input type="number" class="form-control" id="children" name="children" 
-                                           min="0" max="3" value="0" required>
+                                    <label for="check-out" class="form-label">Check-out Date & Time</label>
+                                    <input type="date" class="form-control" id="check-out" name="check_out" 
+                                           required min="<?php echo date('Y-m-d', strtotime('+1 day')); ?>" value="<?php echo date('Y-m-d', strtotime('+1 day')); ?>">
                                 </div>
                             </div>
-                            <div class="mb-3">
-                                <label for="room_type" class="form-label">Room Type</label>
-                                <select class="form-select" id="room_type" name="room_type">
-                                    <option value="">All Types</option>
-                                    <option value="standard">Standard</option>
-                                    <option value="deluxe">Deluxe</option>
-                                    <option value="suite">Suite</option>
-                                    <option value="presidential_suite">Presidential Suite</option>
-                                </select>
+                            <div class="row mb-3">
+                                <div class="col-md-4">
+                                    <label for="room_type" class="form-label">Room Type</label>
+                                    <select class="form-select" id="room_type" name="room_type">
+                                        <option value="">All Types</option>
+                                        <option value="standard">Standard</option>
+                                        <option value="deluxe">Deluxe</option>
+                                        <option value="suite">Suite</option>
+                                        <option value="presidential_suite">Presidential Suite</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="adults" class="form-label">Adults</label>
+                                    <input type="number" class="form-control" id="adults" name="adults" 
+                                           min="1"  value="2" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="children" class="form-label">Children</label>
+                                    <input type="number" class="form-control" id="children" name="children" 
+                                           min="0"  value="0" required>
+                                </div>
                             </div>
-                            <div class="mb-3">
-                                <label for="max_price" class="form-label">Maximum Price (PKR)</label>
+                             <div class="mb-3">
+                                <label for="max_price" class="form-label">Room Price</label>
                                 <input type="number" class="form-control" id="max_price" name="max_price" 
-                                       min="0" placeholder="Enter maximum price">
+                                       min="0" placeholder="Enter price">
                             </div>
                             <div class="d-grid">
                                 <button type="submit" class="btn btn-booking">
@@ -346,7 +348,7 @@ while ($row = mysqli_fetch_assoc($result)) {
                             <h5 class="card-title"><?php echo htmlspecialchars($hotel['name']); ?></h5>
                             <p class="card-text"><?php echo htmlspecialchars($hotel['description']); ?></p>
                             <p class="card-text">
-                                <i class="fas fa-map-marker-alt"></i> <?php echo htmlspecialchars($hotel['city']); ?>, <?php echo htmlspecialchars($hotel['country']); ?>
+                                <i class="fas fa-map-marker-alt"></i> <?php echo htmlspecialchars($hotel['city']); ?>
                             </p>
                             <a href="room-list.php?hotel=<?php echo $hotel['id']; ?>" class="btn btn-custom">View Rooms</a>
                         </div>

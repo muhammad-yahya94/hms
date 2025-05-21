@@ -379,30 +379,59 @@ $result = mysqli_stmt_get_result($stmt);
                         <h3 class="text-center">Search Availability</h3>
                         <form action="room-list.php" method="GET">
                             <div class="mb-3">
-                                <label for="check-in" class="form-label">Check-In</label>
-                                <input type="date" class="form-control" id="check-in" name="check_in" required min="<?php echo date('Y-m-d'); ?>" value="<?php echo htmlspecialchars($check_in); ?>">
-                            </div>
-                            <div class="mb-3">
-                                <label for="check-out" class="form-label">Check-Out</label>
-                                <input type="date" class="form-control" id="check-out" name="check_out" required min="<?php echo date('Y-m-d', strtotime('+1 day')); ?>" value="<?php echo htmlspecialchars($check_out); ?>">
+                                <label for="city" class="form-label">City Name</label>
+                                <select class="form-select" id="city" name="city">
+                                    <option value="">All Cities</option>
+                                    <?php
+                                    $cities_sql = "SELECT DISTINCT city FROM hotels ORDER BY city";
+                                    $cities_result = mysqli_query($conn, $cities_sql);
+                                    while ($city_row = mysqli_fetch_assoc($cities_result)) {
+                                        $selected = ($city == $city_row['city']) ? 'selected' : '';
+                                        echo '<option value="' . htmlspecialchars($city_row['city']) . '"' . $selected . '>' . htmlspecialchars($city_row['city']) . '</option>';
+                                    }
+                                    ?>
+                                </select>
                             </div>
                             <div class="row mb-3">
                                 <div class="col-md-6">
-                                    <label for="adults" class="form-label">Adults</label>
-                                    <select class="form-select" id="adults" name="adults">
-                                        <?php for($i = 1; $i <= 4; $i++): ?>
-                                            <option value="<?php echo $i; ?>" <?php echo $adults == $i ? 'selected' : ''; ?>><?php echo $i; ?> Adult<?php echo $i > 1 ? 's' : ''; ?></option>
-                                        <?php endfor; ?>
-                                    </select>
+                                    <label for="check-in" class="form-label">Check-In Date & Time</label>
+                                    <input type="date" class="form-control" id="check-in" name="check_in" required min="<?php echo date('Y-m-d'); ?>" value="<?php echo htmlspecialchars($check_in); ?>">
                                 </div>
                                 <div class="col-md-6">
-                                    <label for="children" class="form-label">Children</label>
-                                    <select class="form-select" id="children" name="children">
-                                        <?php for($i = 0; $i <= 3; $i++): ?>
-                                            <option value="<?php echo $i; ?>" <?php echo $children == $i ? 'selected' : ''; ?>><?php echo $i; ?> Child<?php echo $i != 1 ? 'ren' : ''; ?></option>
-                                        <?php endfor; ?>
+                                    <label for="check-out" class="form-label">Check-Out Date & Time</label>
+                                    <input type="date" class="form-control" id="check-out" name="check_out" required min="<?php echo date('Y-m-d', strtotime('+1 day')); ?>" value="<?php echo htmlspecialchars($check_out); ?>">
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                 <div class="col-md-4">
+                                    <label for="room_type" class="form-label">Room Type</label>
+                                    <select class="form-select" id="room_type" name="room_type">
+                                        <option value="">All Room Types</option>
+                                        <?php
+                                        $room_types_sql = "SELECT DISTINCT room_type FROM rooms";
+                                        $room_types_result = mysqli_query($conn, $room_types_sql);
+                                        while($type_row = mysqli_fetch_assoc($room_types_result)) {
+                                            $selected = ($room_type == $type_row['room_type']) ? 'selected' : '';
+                                            echo "<option value='" . htmlspecialchars($type_row['room_type']) . "' $selected>" . htmlspecialchars($type_row['room_type']) . "</option>";
+                                        }
+                                        ?>
                                     </select>
                                 </div>
+                                <div class="col-md-4">
+                                    <label for="adults" class="form-label">Adults</label>
+                                    <input type="number" class="form-control" id="adults" name="adults" 
+                                           min="1" max="4" value="<?php echo htmlspecialchars($adults); ?>" required>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="children" class="form-label">Children</label>
+                                    <input type="number" class="form-control" id="children" name="children" 
+                                           min="0" max="3" value="<?php echo htmlspecialchars($children); ?>" required>
+                                </div>
+                            </div>
+                             <div class="mb-3">
+                                <label for="max_price" class="form-label">Room Price</label>
+                                <input type="number" class="form-control" id="max_price" name="max_price" 
+                                       min="0" placeholder="Enter price" value="<?php echo htmlspecialchars($max_price > 0 ? $max_price : ''); ?>">
                             </div>
                             <button type="submit" class="btn btn-booking">
                                 CHECK AVAILABILITY <i class="fas fa-search ms-2"></i>
@@ -425,43 +454,57 @@ $result = mysqli_stmt_get_result($stmt);
                         <h3 class="text-center">Filter Rooms</h3>
                         <form action="room-list.php" method="GET">
                             <div class="mb-3">
-                                <label for="filter-check-in" class="form-label">Check-In</label>
-                                <input type="date" class="form-control" id="filter-check-in" name="check_in" required min="<?php echo date('Y-m-d'); ?>" value="<?php echo htmlspecialchars($check_in); ?>">
-                            </div>
-                            <div class="mb-3">
-                                <label for="filter-check-out" class="form-label">Check-Out</label>
-                                <input type="date" class="form-control" id="filter-check-out" name="check_out" required min="<?php echo date('Y-m-d', strtotime('+1 day')); ?>" value="<?php echo htmlspecialchars($check_out); ?>">
-                            </div>
-                            <div class="row mb-3">
-                                <div class="col-md-6">
-                                    <label for="filter-adults" class="form-label">Adults</label>
-                                    <select class="form-select" id="filter-adults" name="adults">
-                                        <?php for($i = 1; $i <= 4; $i++): ?>
-                                            <option value="<?php echo $i; ?>" <?php echo $adults == $i ? 'selected' : ''; ?>><?php echo $i; ?> Adult<?php echo $i > 1 ? 's' : ''; ?></option>
-                                        <?php endfor; ?>
-                                    </select>
-                                </div>
-                                <div class="col-md-6">
-                                    <label for="filter-children" class="form-label">Children</label>
-                                    <select class="form-select" id="filter-children" name="children">
-                                        <?php for($i = 0; $i <= 3; $i++): ?>
-                                            <option value="<?php echo $i; ?>" <?php echo $children == $i ? 'selected' : ''; ?>><?php echo $i; ?> Child<?php echo $i != 1 ? 'ren' : ''; ?></option>
-                                        <?php endfor; ?>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="mb-3">
-                                <label for="filter-room-type" class="form-label">Room Type</label>
-                                <select class="form-select" id="filter-room-type" name="room_type">
-                                    <option value="">All Room Types</option>
+                                <label for="city" class="form-label">City Name</label>
+                                <select class="form-select" id="city" name="city">
+                                    <option value="">All Cities</option>
                                     <?php
-                                    $room_types = mysqli_query($conn, "SELECT DISTINCT room_type FROM rooms");
-                                    while($type = mysqli_fetch_assoc($room_types)) {
-                                        $selected = ($room_type == $type['room_type']) ? 'selected' : '';
-                                        echo "<option value='" . htmlspecialchars($type['room_type']) . "' $selected>" . htmlspecialchars($type['room_type']) . "</option>";
+                                    $cities_sql = "SELECT DISTINCT city FROM hotels ORDER BY city";
+                                    $cities_result = mysqli_query($conn, $cities_sql);
+                                    while ($city_row = mysqli_fetch_assoc($cities_result)) {
+                                        $selected = ($city == $city_row['city']) ? 'selected' : '';
+                                        echo '<option value="' . htmlspecialchars($city_row['city']) . '"' . $selected . '>' . htmlspecialchars($city_row['city']) . '</option>';
                                     }
                                     ?>
                                 </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="check-in" class="form-label">Check-In Date & Time</label>
+                                <input type="date" class="form-control" id="check-in" name="check_in" 
+                                       required min="<?php echo date('Y-m-d'); ?>" value="<?php echo htmlspecialchars($check_in); ?>">
+                            </div>
+                            <div class="mb-3">
+                                <label for="check-out" class="form-label">Check-Out Date & Time</label>
+                                <input type="date" class="form-control" id="check-out" name="check_out" 
+                                       required min="<?php echo date('Y-m-d', strtotime('+1 day')); ?>" value="<?php echo htmlspecialchars($check_out); ?>">
+                            </div>
+                            <div class="mb-3">
+                                <label for="room_type" class="form-label">Room Type</label>
+                                <select class="form-select" id="room_type" name="room_type">
+                                    <option value="">All Room Types</option>
+                                    <?php
+                                    $room_types_sql = "SELECT DISTINCT room_type FROM rooms";
+                                    $room_types_result = mysqli_query($conn, $room_types_sql);
+                                    while($type_row = mysqli_fetch_assoc($room_types_result)) {
+                                        $selected = ($room_type == $type_row['room_type']) ? 'selected' : '';
+                                        echo "<option value='" . htmlspecialchars($type_row['room_type']) . "' $selected>" . htmlspecialchars($type_row['room_type']) . "</option>";
+                                    }
+                                    ?>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="adults" class="form-label">Adults</label>
+                                <input type="number" class="form-control" id="adults" name="adults" 
+                                       min="1" max="4" value="<?php echo htmlspecialchars($adults); ?>" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="children" class="form-label">Children</label>
+                                <input type="number" class="form-control" id="children" name="children" 
+                                       min="0" max="3" value="<?php echo htmlspecialchars($children); ?>" required>
+                            </div>
+                             <div class="mb-3">
+                                <label for="max_price" class="form-label">Room Price</label>
+                                <input type="number" class="form-control" id="max_price" name="max_price" 
+                                       min="0" placeholder="Enter  price" value="<?php echo htmlspecialchars($max_price > 0 ? $max_price : ''); ?>">
                             </div>
                             <button type="submit" class="btn btn-booking">
                                 Apply Filters <i class="fas fa-filter ms-2"></i>

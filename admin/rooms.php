@@ -40,17 +40,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['add_room']) || isset($_POST['update_room'])) {
         $hotel_id = (int)$_POST['hotel_id'];
         $room_type = mysqli_real_escape_string($conn, $_POST['room_type']);
-        $price = (float)$_POST['price'];
+        $price = (float)$_POST['price_per_night'];
         $capacity = (int)$_POST['capacity'];
         $amenities = mysqli_real_escape_string($conn, $_POST['amenities']);
+        $description = mysqli_real_escape_string($conn, $_POST['description']);
         $room_id = isset($_POST['room_id']) ? (int)$_POST['room_id'] : null;
 
         // Handle image upload
-        $image_path = '';
+        $image_path = null;
         if (isset($_FILES['room_image']) && $_FILES['room_image']['error'] === UPLOAD_ERR_OK) {
             $upload_dir = '../uploads/rooms/';
+            if (!is_dir($upload_dir)) {
+                mkdir($upload_dir, 0777, true);
+            }
             $file_extension = strtolower(pathinfo($_FILES['room_image']['name'], PATHINFO_EXTENSION));
-            $allowed_extensions = ['jpg', 'jpeg', 'png', 'webp'];
+            $allowed_extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
             
             if (in_array($file_extension, $allowed_extensions)) {
                 $new_filename = uniqid('room_') . '.' . $file_extension;
@@ -62,23 +66,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $error = "Error uploading image.";
                 }
             } else {
-                $error = "Invalid file type. Allowed types: JPG, JPEG, PNG, WEBP";
+                $error = "Invalid file type. Allowed types: JPG, JPEG, PNG, GIF, WEBP";
+            }
+        } else if (isset($_POST['room_id'])) {
+            $room_id_check = (int)$_POST['room_id'];
+            $sql_check_image = "SELECT image_url FROM rooms WHERE id = ?";
+            $stmt_check_image = mysqli_prepare($conn, $sql_check_image);
+            mysqli_stmt_bind_param($stmt_check_image, "i", $room_id_check);
+            mysqli_stmt_execute($stmt_check_image);
+            $result_check_image = mysqli_stmt_get_result($stmt_check_image);
+            $row_check_image = mysqli_fetch_assoc($result_check_image);
+            if ($row_check_image && !empty($row_check_image['image_url'])) {
+                $image_path = $row_check_image['image_url'];
             }
         }
 
         if (empty($error)) {
             if (isset($_POST['add_room'])) {
-                $sql = "INSERT INTO rooms (hotel_id, room_type, price, capacity, amenities, image) 
-                        VALUES (?, ?, ?, ?, ?, ?)";
+                $sql = "INSERT INTO rooms (hotel_id, room_type, description, price_per_night, capacity, amenities, image_url) 
+                        VALUES (?, ?, ?, ?, ?, ?, ?)";
                 $stmt = mysqli_prepare($conn, $sql);
-                mysqli_stmt_bind_param($stmt, "isdiss", $hotel_id, $room_type, $price, $capacity, $amenities, $image_path);
+                mysqli_stmt_bind_param($stmt, "issdiss", $hotel_id, $room_type, $description, $price, $capacity, $amenities, $image_path);
             } else {
-                $sql = "UPDATE rooms SET hotel_id = ?, room_type = ?, price = ?, capacity = ?, amenities = ?";
-                $params = [$hotel_id, $room_type, $price, $capacity, $amenities];
-                $types = "isdiss";
+                $sql = "UPDATE rooms SET hotel_id = ?, room_type = ?, description = ?, price_per_night = ?, capacity = ?, amenities = ?";
+                $params = [$hotel_id, $room_type, $description, $price, $capacity, $amenities];
+                $types = "issdiss";
                 
-                if (!empty($image_path)) {
-                    $sql .= ", image = ?";
+                if ($image_path !== null) {
+                    $sql .= ", image_url = ?";
                     $params[] = $image_path;
                     $types .= "s";
                 }
@@ -355,17 +370,22 @@ $rooms = mysqli_query($conn, $sql);
                                 <div class="room-details">
                                     <h5><?php echo htmlspecialchars($room['hotel_name']); ?></h5>
                                     <p class="room-type"><?php echo ucfirst($room['room_type']); ?></p>
-                                    <p class="price">PKR <?php echo number_format($room['price'], 2); ?> per night</p>
+                                    <p class="price">PKR <?php echo number_format($room['price_per_night'], 2); ?> per night</p>
                                     <p class="capacity">Capacity: <?php echo $room['capacity']; ?> guests</p>
                                     <p class="amenities"><?php echo htmlspecialchars($room['amenities']); ?></p>
                                     <div class="room-actions">
-                                        <a href="?edit=<?php echo $room['id']; ?>" class="btn btn-sm btn-primary">
+                                        <button type="button" class="btn btn-sm btn-primary" 
+                                                onclick="editRoom(<?php echo htmlspecialchars(json_encode($room)); ?>)">
                                             <i class="fas fa-edit"></i> Edit
-                                        </a>
-                                        <a href="?delete=<?php echo $room['id']; ?>" class="btn btn-sm btn-danger" 
-                                           onclick="return confirm('Are you sure you want to delete this room?')">
+                                        </button>
+                                        <form method="POST" action="" class="d-inline" 
+                                          onsubmit="return confirm('Are you sure you want to delete this room?')">
+                                        <input type="hidden" name="delete_room" value="true">
+                                        <input type="hidden" name="room_id" value="<?php echo $room['id']; ?>">
+                                        <button type="submit" class="btn btn-sm btn-danger">
                                             <i class="fas fa-trash"></i> Delete
-                                        </a>
+                                        </button>
+                                    </form>
                                     </div>
                                 </div>
                             </div>
@@ -385,13 +405,16 @@ $rooms = mysqli_query($conn, $sql);
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <form method="POST" action="" id="roomForm">
+                    <form method="POST" action="" id="roomForm" enctype="multipart/form-data">
                         <input type="hidden" name="room_id" id="room_id">
                         <div class="mb-3">
                             <label for="hotel_id" class="form-label">Hotel *</label>
                             <select class="form-select" id="hotel_id" name="hotel_id" required>
                                 <option value="">Select Hotel</option>
-                                <?php while($hotel = mysqli_fetch_assoc($hotels)): ?>
+                                <?php
+                                $hotels_modal_sql = "SELECT id, name FROM hotels ORDER BY name ASC";
+                                $hotels_modal_result = mysqli_query($conn, $hotels_modal_sql);
+                                while($hotel = mysqli_fetch_assoc($hotels_modal_result)): ?>
                                     <option value="<?php echo $hotel['id']; ?>">
                                         <?php echo htmlspecialchars($hotel['name']); ?>
                                     </option>
@@ -401,11 +424,20 @@ $rooms = mysqli_query($conn, $sql);
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="room_type" class="form-label">Room Type *</label>
-                                <input type="text" class="form-control" id="room_type" name="room_type" required>
+                                <select class="form-select" id="room_type" name="room_type" required>
+                                    <option value="">Select Type</option>
+                                    <option value="standard">Standard</option>
+                                    <option value="deluxe">Deluxe</option>
+                                    <option value="suite">Suite</option>
+                                    <option value="presidential_suite">Presidential Suite</option>
+                                </select>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="image_url" class="form-label">Image URL</label>
-                                <input type="url" class="form-control" id="image_url" name="image_url">
+                                <label for="room_image" class="form-label">Room Image</label>
+                                <input type="file" class="form-control" id="room_image" name="room_image" accept="image/*">
+                                <div id="current_room_image_preview" class="mt-2" style="display: none;">
+                                    <img src="" alt="Current Room Image" class="img-thumbnail" style="max-height: 100px;">
+                                </div>
                             </div>
                         </div>
                         <div class="mb-3">
@@ -442,14 +474,32 @@ $rooms = mysqli_query($conn, $sql);
         function editRoom(room) {
             document.getElementById('room_id').value = room.id;
             document.getElementById('hotel_id').value = room.hotel_id;
+            
+            // Set room type dropdown value
             document.getElementById('room_type').value = room.room_type;
+            
             document.getElementById('description').value = room.description;
             document.getElementById('price_per_night').value = room.price_per_night;
             document.getElementById('capacity').value = room.capacity;
-            document.getElementById('image_url').value = room.image_url;
             document.getElementById('amenities').value = room.amenities;
             
-            new bootstrap.Modal(document.getElementById('roomModal')).show();
+            // Handle existing image display for editing
+            const currentRoomImagePreview = document.getElementById('current_room_image_preview');
+            const currentRoomImage = currentRoomImagePreview.querySelector('img');
+            if (room.image_url) {
+                currentRoomImage.src = '../' + room.image_url; // Assuming image_url is relative path
+                currentRoomImagePreview.style.display = 'block';
+            } else {
+                currentRoomImage.src = '';
+                currentRoomImagePreview.style.display = 'none';
+            }
+            
+            // Clear the file input when opening for edit
+            document.getElementById('room_image').value = '';
+
+            // Show the modal
+            var roomModal = new bootstrap.Modal(document.getElementById('roomModal'));
+            roomModal.show();
         }
     </script>
 </body>

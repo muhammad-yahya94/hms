@@ -41,7 +41,7 @@ $stats['cancelled_bookings'] = mysqli_fetch_assoc($result)['total'];
 
 // Recent Bookings
 $recent_bookings = mysqli_query($conn, "
-    SELECT b.*, r.room_type, h.name as hotel_name, u.username 
+    SELECT b.*, r.room_type, h.name as hotel_name, u.username, b.booking_status 
     FROM bookings b 
     JOIN rooms r ON b.room_id = r.id 
     JOIN hotels h ON b.hotel_id = h.id 
@@ -263,6 +263,7 @@ $revenue = mysqli_query($conn, "
                                     <th>Check-in</th>
                                     <th>Check-out</th>
                                     <th>Total</th>
+                                    <th>Status</th>
                                     <th>Action</th>
                                 </tr>
                             </thead>
@@ -272,11 +273,12 @@ $revenue = mysqli_query($conn, "
                                     <td><?php echo htmlspecialchars($booking['hotel_name']); ?></td>
                                     <td><?php echo htmlspecialchars($booking['room_type']); ?></td>
                                     <td><?php echo htmlspecialchars($booking['username']); ?></td>
-                                    <td><?php echo date('M d, Y', strtotime($booking['check_in_date'])); ?></td>
-                                    <td><?php echo date('M d, Y', strtotime($booking['check_out_date'])); ?></td>
+                                    <td><?php echo date('M d, Y H:i', strtotime($booking['check_in_date'])); ?></td>
+                                    <td><?php echo date('M d, Y H:i', strtotime($booking['check_out_date'])); ?></td>
                                     <td>PKR <?php echo number_format($booking['total_price'], 2); ?></td>
+                                    <td><?php echo htmlspecialchars(ucfirst($booking['booking_status'])); ?></td>
                                     <td>
-                                        <a href="reservations.php?id=<?php echo $booking['id']; ?>" class="btn btn-custom btn-sm">View</a>
+                                        <a href="reservations.php?user_id=<?php echo $booking['user_id']; ?>" class="btn btn-custom btn-sm">View</a>
                                     </td>
                                 </tr>
                                 <?php endwhile; ?>
