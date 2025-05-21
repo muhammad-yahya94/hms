@@ -272,7 +272,7 @@ $rooms = mysqli_query($conn, $sql);
             <div class="col-md-9 col-lg-10 main-content">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h2>Room Management</h2>
-                    <button type="button" class="btn btn-custom" data-bs-toggle="modal" data-bs-target="#roomModal">
+                    <button type="button" class="btn btn-custom" data-bs-toggle="modal" data-bs-target="#addRoomModal">
                         <i class="fas fa-plus"></i> Add New Room
                     </button>
                 </div>
@@ -284,80 +284,6 @@ $rooms = mysqli_query($conn, $sql);
                 <?php if ($success): ?>
                     <div class="alert alert-success"><?php echo $success; ?></div>
                 <?php endif; ?>
-
-                <!-- Room Form -->
-                <form method="POST" action="" enctype="multipart/form-data" class="mb-4">
-                    <?php if (isset($edit_room)): ?>
-                        <input type="hidden" name="room_id" value="<?php echo $edit_room['id']; ?>">
-                    <?php endif; ?>
-                    
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <label for="hotel_id" class="form-label">Hotel</label>
-                            <select class="form-select" id="hotel_id" name="hotel_id" required>
-                                <option value="">Select Hotel</option>
-                                <?php while($hotel = mysqli_fetch_assoc($hotels)): ?>
-                                    <option value="<?php echo $hotel['id']; ?>" 
-                                            <?php echo (isset($edit_room) && $edit_room['hotel_id'] == $hotel['id']) ? 'selected' : ''; ?>>
-                                        <?php echo htmlspecialchars($hotel['name']); ?>
-                                    </option>
-                                <?php endwhile; ?>
-                            </select>
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <label for="room_type" class="form-label">Room Type</label>
-                            <select class="form-select" id="room_type" name="room_type" required>
-                                <option value="">Select Type</option>
-                                <option value="standard" <?php echo (isset($edit_room) && $edit_room['room_type'] == 'standard') ? 'selected' : ''; ?>>Standard</option>
-                                <option value="deluxe" <?php echo (isset($edit_room) && $edit_room['room_type'] == 'deluxe') ? 'selected' : ''; ?>>Deluxe</option>
-                                <option value="suite" <?php echo (isset($edit_room) && $edit_room['room_type'] == 'suite') ? 'selected' : ''; ?>>Suite</option>
-                            </select>
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <label for="price" class="form-label">Price per Night</label>
-                            <input type="number" class="form-control" id="price" name="price" required min="0" step="0.01"
-                                   value="<?php echo isset($edit_room) ? $edit_room['price'] : ''; ?>">
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <label for="capacity" class="form-label">Capacity (Guests)</label>
-                            <input type="number" class="form-control" id="capacity" name="capacity" required min="1" max="10"
-                                   value="<?php echo isset($edit_room) ? $edit_room['capacity'] : ''; ?>">
-                        </div>
-                        
-                        <div class="col-md-12">
-                            <label for="amenities" class="form-label">Amenities</label>
-                            <textarea class="form-control" id="amenities" name="amenities" rows="3" required><?php echo isset($edit_room) ? $edit_room['amenities'] : ''; ?></textarea>
-                        </div>
-                        
-                        <div class="col-md-12">
-                            <label for="room_image" class="form-label">Room Image</label>
-                            <input type="file" class="form-control" id="room_image" name="room_image" accept="image/*" <?php echo !isset($edit_room) ? 'required' : ''; ?>>
-                            <?php if (isset($edit_room) && !empty($edit_room['image'])): ?>
-                                <div class="mt-2">
-                                    <img src="../<?php echo htmlspecialchars($edit_room['image']); ?>" alt="Current Room Image" class="img-thumbnail" style="max-height: 200px;">
-                                </div>
-                            <?php endif; ?>
-                        </div>
-                        
-                        <div class="col-12">
-                            <?php if (isset($edit_room)): ?>
-                                <button type="submit" name="update_room" class="btn btn-primary">
-                                    <i class="fas fa-save"></i> Update Room
-                                </button>
-                                <a href="rooms.php" class="btn btn-secondary">
-                                    <i class="fas fa-times"></i> Cancel
-                                </a>
-                            <?php else: ?>
-                                <button type="submit" name="add_room" class="btn btn-primary">
-                                    <i class="fas fa-plus"></i> Add Room
-                                </button>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </form>
 
                 <!-- Rooms List -->
                 <div class="row">
@@ -374,10 +300,9 @@ $rooms = mysqli_query($conn, $sql);
                                     <p class="capacity">Capacity: <?php echo $room['capacity']; ?> guests</p>
                                     <p class="amenities"><?php echo htmlspecialchars($room['amenities']); ?></p>
                                     <div class="room-actions">
-                                        <button type="button" class="btn btn-sm btn-primary" 
-                                                onclick="editRoom(<?php echo htmlspecialchars(json_encode($room)); ?>)">
+                                        <a href="edit_room.php?id=<?php echo $room['id']; ?>" class="btn btn-sm btn-primary">
                                             <i class="fas fa-edit"></i> Edit
-                                        </button>
+                                        </a>
                                         <form method="POST" action="" class="d-inline" 
                                           onsubmit="return confirm('Are you sure you want to delete this room?')">
                                         <input type="hidden" name="delete_room" value="true">
@@ -396,49 +321,44 @@ $rooms = mysqli_query($conn, $sql);
         </div>
     </div>
 
-    <!-- Room Modal -->
-    <div class="modal fade" id="roomModal" tabindex="-1">
+    <!-- Add Room Modal -->
+    <div class="modal fade" id="addRoomModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Add/Edit Room</h5>
+                    <h5 class="modal-title">Add New Room</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <form method="POST" action="" id="roomForm" enctype="multipart/form-data">
-                        <input type="hidden" name="room_id" id="room_id">
+                    <form method="POST" action="edit_room.php" enctype="multipart/form-data">
                         <div class="mb-3">
                             <label for="hotel_id" class="form-label">Hotel *</label>
                             <select class="form-select" id="hotel_id" name="hotel_id" required>
                                 <option value="">Select Hotel</option>
                                 <?php
-                                $hotels_modal_sql = "SELECT id, name FROM hotels ORDER BY name ASC";
-                                $hotels_modal_result = mysqli_query($conn, $hotels_modal_sql);
-                                while($hotel = mysqli_fetch_assoc($hotels_modal_result)): ?>
+                                    // Need to fetch hotels here again for the modal if not already available
+                                    $sql_hotels_modal = "SELECT id, name FROM hotels ORDER BY name ASC";
+                                    $hotels_modal_result = mysqli_query($conn, $sql_hotels_modal);
+                                    while($hotel = mysqli_fetch_assoc($hotels_modal_result)): ?>
                                     <option value="<?php echo $hotel['id']; ?>">
                                         <?php echo htmlspecialchars($hotel['name']); ?>
                                     </option>
                                 <?php endwhile; ?>
                             </select>
                         </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="room_type" class="form-label">Room Type *</label>
-                                <select class="form-select" id="room_type" name="room_type" required>
-                                    <option value="">Select Type</option>
-                                    <option value="standard">Standard</option>
-                                    <option value="deluxe">Deluxe</option>
-                                    <option value="suite">Suite</option>
-                                    <option value="presidential_suite">Presidential Suite</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="room_image" class="form-label">Room Image</label>
-                                <input type="file" class="form-control" id="room_image" name="room_image" accept="image/*">
-                                <div id="current_room_image_preview" class="mt-2" style="display: none;">
-                                    <img src="" alt="Current Room Image" class="img-thumbnail" style="max-height: 100px;">
-                                </div>
-                            </div>
+                        <div class="mb-3">
+                            <label for="room_type" class="form-label">Room Type *</label>
+                            <select class="form-select" id="room_type" name="room_type" required>
+                                <option value="">Select Type</option>
+                                <?php
+                                    // Need to fetch room types here again for the modal if not already available
+                                    $sql_room_types_modal = "SELECT DISTINCT room_type FROM rooms ORDER BY room_type";
+                                    $room_types_modal_result = mysqli_query($conn, $sql_room_types_modal);
+                                    while($type_row = mysqli_fetch_assoc($room_types_modal_result)) {
+                                        echo "<option value='" . htmlspecialchars($type_row['room_type']) . "'>" . htmlspecialchars(ucfirst($type_row['room_type'])) . "</option>";
+                                    }
+                                ?>
+                            </select>
                         </div>
                         <div class="mb-3">
                             <label for="description" class="form-label">Description</label>
@@ -451,16 +371,20 @@ $rooms = mysqli_query($conn, $sql);
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="capacity" class="form-label">Capacity *</label>
-                                <input type="number" class="form-control" id="capacity" name="capacity" required>
+                                <input type="number" min="1" name="capacity" id="capacity" class="form-control shadow-none" required>
                             </div>
                         </div>
                         <div class="mb-3">
                             <label for="amenities" class="form-label">Amenities</label>
                             <textarea class="form-control" id="amenities" name="amenities" rows="2"></textarea>
                         </div>
+                        <div class="mb-3">
+                            <label for="room_image" class="form-label">Room Image</label>
+                            <input type="file" class="form-control" id="room_image" name="room_image" accept="image/*" required>
+                        </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                            <button type="submit" name="save_room" class="btn btn-custom">Save Room</button>
+                            <button type="submit" name="add_room" class="btn btn-custom">Add Room</button>
                         </div>
                     </form>
                 </div>
@@ -470,37 +394,5 @@ $rooms = mysqli_query($conn, $sql);
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        function editRoom(room) {
-            document.getElementById('room_id').value = room.id;
-            document.getElementById('hotel_id').value = room.hotel_id;
-            
-            // Set room type dropdown value
-            document.getElementById('room_type').value = room.room_type;
-            
-            document.getElementById('description').value = room.description;
-            document.getElementById('price_per_night').value = room.price_per_night;
-            document.getElementById('capacity').value = room.capacity;
-            document.getElementById('amenities').value = room.amenities;
-            
-            // Handle existing image display for editing
-            const currentRoomImagePreview = document.getElementById('current_room_image_preview');
-            const currentRoomImage = currentRoomImagePreview.querySelector('img');
-            if (room.image_url) {
-                currentRoomImage.src = '../' + room.image_url; // Assuming image_url is relative path
-                currentRoomImagePreview.style.display = 'block';
-            } else {
-                currentRoomImage.src = '';
-                currentRoomImagePreview.style.display = 'none';
-            }
-            
-            // Clear the file input when opening for edit
-            document.getElementById('room_image').value = '';
-
-            // Show the modal
-            var roomModal = new bootstrap.Modal(document.getElementById('roomModal'));
-            roomModal.show();
-        }
-    </script>
 </body>
 </html> 

@@ -408,11 +408,11 @@ $result = mysqli_stmt_get_result($stmt);
                                     <select class="form-select" id="room_type" name="room_type">
                                         <option value="">All Room Types</option>
                                         <?php
-                                        $room_types_sql = "SELECT DISTINCT room_type FROM rooms";
+                                        $room_types_sql = "SELECT DISTINCT room_type FROM rooms ORDER BY room_type";
                                         $room_types_result = mysqli_query($conn, $room_types_sql);
                                         while($type_row = mysqli_fetch_assoc($room_types_result)) {
                                             $selected = ($room_type == $type_row['room_type']) ? 'selected' : '';
-                                            echo "<option value='" . htmlspecialchars($type_row['room_type']) . "' $selected>" . htmlspecialchars($type_row['room_type']) . "</option>";
+                                            echo "<option value='" . htmlspecialchars($type_row['room_type']) . "' $selected>" . htmlspecialchars(ucfirst($type_row['room_type'])) . "</option>";
                                         }
                                         ?>
                                     </select>
@@ -482,11 +482,11 @@ $result = mysqli_stmt_get_result($stmt);
                                 <select class="form-select" id="room_type" name="room_type">
                                     <option value="">All Room Types</option>
                                     <?php
-                                    $room_types_sql = "SELECT DISTINCT room_type FROM rooms";
+                                    $room_types_sql = "SELECT DISTINCT room_type FROM rooms ORDER BY room_type";
                                     $room_types_result = mysqli_query($conn, $room_types_sql);
                                     while($type_row = mysqli_fetch_assoc($room_types_result)) {
                                         $selected = ($room_type == $type_row['room_type']) ? 'selected' : '';
-                                        echo "<option value='" . htmlspecialchars($type_row['room_type']) . "' $selected>" . htmlspecialchars($type_row['room_type']) . "</option>";
+                                        echo "<option value='" . htmlspecialchars($type_row['room_type']) . "' $selected>" . htmlspecialchars(ucfirst($type_row['room_type'])) . "</option>";
                                     }
                                     ?>
                                 </select>

@@ -278,50 +278,54 @@ while ($row = mysqli_fetch_assoc($result)) {
                                     <?php
                                     $cities_sql = "SELECT DISTINCT city FROM hotels ORDER BY city";
                                     $cities_result = mysqli_query($conn, $cities_sql);
-                                    while ($city = mysqli_fetch_assoc($cities_result)) {
-                                        echo '<option value="' . htmlspecialchars($city['city']) . '">' . htmlspecialchars($city['city']) . '</option>';
+                                    while ($city_row = mysqli_fetch_assoc($cities_result)) {
+                                        echo '<option value="' . htmlspecialchars($city_row['city']) . '">' . htmlspecialchars($city_row['city']) . '</option>';
                                     }
                                     ?>
                                 </select>
                             </div>
                             <div class="row mb-3">
                                 <div class="col-md-6">
-                                    <label for="check-in" class="form-label">Check-in Date & Time</label>
+                                    <label for="check-in" class="form-label">Check-In Date & Time</label>
                                     <input type="date" class="form-control" id="check-in" name="check_in" 
-                                           required min="<?php echo date('Y-m-d'); ?>" value="<?php echo date('Y-m-d'); ?>">
+                                       required min="<?php echo date('Y-m-d'); ?>" value="<?php echo date('Y-m-d'); ?>">
                                 </div>
                                 <div class="col-md-6">
-                                    <label for="check-out" class="form-label">Check-out Date & Time</label>
+                                    <label for="check-out" class="form-label">Check-Out Date & Time</label>
                                     <input type="date" class="form-control" id="check-out" name="check_out" 
-                                           required min="<?php echo date('Y-m-d', strtotime('+1 day')); ?>" value="<?php echo date('Y-m-d', strtotime('+1 day')); ?>">
+                                       required min="<?php echo date('Y-m-d', strtotime('+1 day')); ?>" value="<?php echo date('Y-m-d', strtotime('+1 day')); ?>">
                                 </div>
                             </div>
                             <div class="row mb-3">
-                                <div class="col-md-4">
+                                 <div class="col-md-4">
                                     <label for="room_type" class="form-label">Room Type</label>
                                     <select class="form-select" id="room_type" name="room_type">
                                         <option value="">All Types</option>
-                                        <option value="standard">Standard</option>
-                                        <option value="deluxe">Deluxe</option>
-                                        <option value="suite">Suite</option>
-                                        <option value="presidential_suite">Presidential Suite</option>
+                                        <?php
+                                        $room_types_sql = "SELECT DISTINCT room_type FROM rooms ORDER BY room_type";
+                                        $room_types_result = mysqli_query($conn, $room_types_sql);
+                                        while($type_row = mysqli_fetch_assoc($room_types_result)) {
+                                            $selected = (isset($_GET['room_type']) && $_GET['room_type'] == $type_row['room_type']) ? 'selected' : '';
+                                            echo "<option value='" . htmlspecialchars($type_row['room_type']) . "' $selected>" . htmlspecialchars(ucfirst($type_row['room_type'])) . "</option>";
+                                        }
+                                        ?>
                                     </select>
                                 </div>
                                 <div class="col-md-4">
                                     <label for="adults" class="form-label">Adults</label>
                                     <input type="number" class="form-control" id="adults" name="adults" 
-                                           min="1"  value="2" required>
+                                           min="1" max="4" value="2" required>
                                 </div>
                                 <div class="col-md-4">
                                     <label for="children" class="form-label">Children</label>
                                     <input type="number" class="form-control" id="children" name="children" 
-                                           min="0"  value="0" required>
+                                           min="0" max="3" value="0" required>
                                 </div>
                             </div>
                              <div class="mb-3">
                                 <label for="max_price" class="form-label">Room Price</label>
                                 <input type="number" class="form-control" id="max_price" name="max_price" 
-                                       min="0" placeholder="Enter price">
+                                       min="0" placeholder="Enter price" value="">
                             </div>
                             <div class="d-grid">
                                 <button type="submit" class="btn btn-booking">
