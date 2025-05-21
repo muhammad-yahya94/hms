@@ -215,9 +215,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     <a class="nav-link" href="../index.php" target="_blank">
                         <i class="fas fa-external-link-alt"></i> View Site
                     </a>
-                    <a class="nav-link" href="../index.php" target="_blank">
-                        <i class="fas fa-external-link-alt"></i> View Site
-                    </a>
                     <a class="nav-link" href="../logout.php">
                         <i class="fas fa-sign-out-alt"></i> Logout
                     </a>

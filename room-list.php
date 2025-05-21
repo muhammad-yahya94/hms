@@ -7,7 +7,7 @@ $check_in = isset($_GET['check_in']) ? $_GET['check_in'] : date('Y-m-d');
 $check_out = isset($_GET['check_out']) ? $_GET['check_out'] : date('Y-m-d', strtotime('+1 day'));
 $adults = isset($_GET['adults']) ? (int)$_GET['adults'] : 2;
 $children = isset($_GET['children']) ? (int)$_GET['children'] : 0;
-$room_type = isset($_GET['room_type']) ? $_GET['room_type'] : '';
+$room_type = isset($_GET['type']) ? $_GET['type'] : '';
 $city = isset($_GET['city']) ? $_GET['city'] : '';
 $max_price = isset($_GET['max_price']) ? (float)$_GET['max_price'] : 0;
 
@@ -17,8 +17,6 @@ $sql = "SELECT r.*, h.name as hotel_name, h.city, h.address, h.image_url as hote
         LEFT JOIN hotels h ON r.hotel_id = h.id";
 $params = array();
 $types = "";
-
-$where_conditions = array();
 
 if (!empty($room_type)) {
     $where_conditions[] = "r.room_type = ?";
@@ -38,25 +36,40 @@ if ($max_price > 0) {
     $types .= "d";
 }
 
-if (!empty($check_in) && !empty($check_out)) {
-    $where_conditions[] = "r.id NOT IN (
-        SELECT room_id FROM bookings 
-        WHERE (check_in_date <= ? AND check_out_date >= ?)
-        OR (check_in_date <= ? AND check_out_date >= ?)
-        OR (check_in_date >= ? AND check_out_date <= ?)
-    )";
-    $params = array_merge($params, [$check_out, $check_in, $check_in, $check_in, $check_in, $check_out]);
-    $types .= "ssssss";
-}
+// Check room availability with date and time
+$check_in_datetime = $check_in . ' 14:00:00'; // Check-in time is 2 PM
+$check_out_datetime = $check_out . ' 12:00:00'; // Check-out time is 12 PM
 
+$where_conditions[] = "r.id NOT IN (
+    SELECT room_id 
+    FROM bookings 
+    WHERE status = 'confirmed' 
+    AND (
+        (check_in <= ? AND check_out >= ?) OR  -- New booking starts during existing booking
+        (check_in <= ? AND check_out >= ?) OR  -- New booking ends during existing booking
+        (check_in >= ? AND check_out <= ?)     -- New booking is completely within existing booking
+    )
+)";
+$params = array_merge($params, [
+    $check_in_datetime, $check_in_datetime,
+    $check_out_datetime, $check_out_datetime,
+    $check_in_datetime, $check_out_datetime
+]);
+$types .= "ssssss";
+
+// Add capacity check
+$total_guests = $adults + $children;
 $where_conditions[] = "r.capacity >= ?";
-$params[] = $adults + $children;
+$params[] = $total_guests;
 $types .= "i";
 
 if (!empty($where_conditions)) {
-    $sql .= " WHERE " . implode(" AND ", $where_conditions);
+    $sql .= " AND " . implode(" AND ", $where_conditions);
 }
 
+$sql .= " ORDER BY r.price_per_night ASC";
+
+// Prepare and execute the query
 $stmt = mysqli_prepare($conn, $sql);
 if (!empty($params)) {
     mysqli_stmt_bind_param($stmt, $types, ...$params);
@@ -393,13 +406,18 @@ $result = mysqli_stmt_get_result($stmt);
                                 </select>
                             </div>
                             <div class="row mb-3">
-                                <div class="col-md-6">
+                            <div class="col-md-6">
                                     <label for="check-in" class="form-label">Check-In Date & Time</label>
-                                    <input type="date" class="form-control" id="check-in" name="check_in" required min="<?php echo date('Y-m-d'); ?>" value="<?php echo htmlspecialchars($check_in); ?>">
+                                    <input type="datetime-local" class="form-control" id="check-in" name="check_in"
+                                        required
+                                        value="<?php echo isset($check_in) ? date('Y-m-d\TH:i', strtotime($check_in)) : $check_in_default; ?>">
                                 </div>
+
                                 <div class="col-md-6">
                                     <label for="check-out" class="form-label">Check-Out Date & Time</label>
-                                    <input type="date" class="form-control" id="check-out" name="check_out" required min="<?php echo date('Y-m-d', strtotime('+1 day')); ?>" value="<?php echo htmlspecialchars($check_out); ?>">
+                                    <input type="datetime-local" class="form-control" id="check-out" name="check_out"
+                                        required
+                                        value="<?php echo isset($check_out) ? date('Y-m-d\TH:i', strtotime($check_out)) : $check_out_default; ?>">
                                 </div>
                             </div>
                             <div class="row mb-3">
@@ -467,16 +485,19 @@ $result = mysqli_stmt_get_result($stmt);
                                     ?>
                                 </select>
                             </div>
-                            <div class="mb-3">
-                                <label for="check-in" class="form-label">Check-In Date & Time</label>
-                                <input type="date" class="form-control" id="check-in" name="check_in" 
-                                       required min="<?php echo date('Y-m-d'); ?>" value="<?php echo htmlspecialchars($check_in); ?>">
-                            </div>
-                            <div class="mb-3">
-                                <label for="check-out" class="form-label">Check-Out Date & Time</label>
-                                <input type="date" class="form-control" id="check-out" name="check_out" 
-                                       required min="<?php echo date('Y-m-d', strtotime('+1 day')); ?>" value="<?php echo htmlspecialchars($check_out); ?>">
-                            </div>
+                            <div class="md-6">
+                                    <label for="check-in" class="form-label">Check-In Date & Time</label>
+                                    <input type="datetime-local" class="form-control" id="check-in" name="check_in"
+                                        required
+                                        value="<?php echo isset($check_in) ? date('Y-m-d\TH:i', strtotime($check_in)) : $check_in_default; ?>">
+                                </div>
+
+                                <div class="md-6">
+                                    <label for="check-out" class="form-label">Check-Out Date & Time</label>
+                                    <input type="datetime-local" class="form-control" id="check-out" name="check_out"
+                                        required
+                                        value="<?php echo isset($check_out) ? date('Y-m-d\TH:i', strtotime($check_out)) : $check_out_default; ?>">
+                                </div>
                             <div class="mb-3">
                                 <label for="room_type" class="form-label">Room Type</label>
                                 <select class="form-select" id="room_type" name="room_type">
@@ -621,19 +642,35 @@ $result = mysqli_stmt_get_result($stmt);
     <!-- Custom JavaScript -->
     <script>
         // Set minimum dates for check-in and check-out
-        const checkInInput = document.getElementById('filter-check-in');
-        const checkOutInput = document.getElementById('filter-check-out');
+        const checkInInput = document.getElementById('check-in');
+        const checkOutInput = document.getElementById('check-out');
         
         checkInInput.addEventListener('change', function() {
             const checkInDate = new Date(this.value);
             const nextDay = new Date(checkInDate);
             nextDay.setDate(nextDay.getDate() + 1);
-            checkOutInput.min = nextDay.toISOString().split('T')[0];
+            nextDay.setHours(12, 0, 0); // Set to 12:00 PM
+            checkOutInput.min = nextDay.toISOString().slice(0, 16);
             
             if (checkOutInput.value && new Date(checkOutInput.value) <= checkInDate) {
-                checkOutInput.value = nextDay.toISOString().split('T')[0];
+                checkOutInput.value = nextDay.toISOString().slice(0, 16);
             }
         });
+
+        // Set initial check-in time to 2:00 PM if not set
+        if (!checkInInput.value) {
+            const now = new Date();
+            now.setHours(14, 0, 0);
+            checkInInput.value = now.toISOString().slice(0, 16);
+        }
+
+        // Set initial check-out time to 12:00 PM next day if not set
+        if (!checkOutInput.value) {
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            tomorrow.setHours(12, 0, 0);
+            checkOutInput.value = tomorrow.toISOString().slice(0, 16);
+        }
     </script>
 </body>
 </html> 

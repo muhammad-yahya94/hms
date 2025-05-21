@@ -18,6 +18,9 @@ $result = mysqli_query($conn, $sql);
 while ($row = mysqli_fetch_assoc($result)) {
     $room_categories[] = $row;
 }
+
+$check_in = isset($_GET['check_in']) ? $_GET['check_in'] : date('Y-m-d 14:00');
+$check_out = isset($_GET['check_out']) ? $_GET['check_out'] : date('Y-m-d 12:00', strtotime('+1 day'));
 ?>
 
 <!DOCTYPE html>
@@ -53,12 +56,12 @@ while ($row = mysqli_fetch_assoc($result)) {
             padding: 40px;
             border-radius: 10px;
         }
-        .search-form {
+        /* .search-form {
             background-color: rgba(255, 255, 255, 0.9);
             padding: 30px;
             border-radius: 10px;
             color: #333;
-        }
+        } */
         .search-form h3 {
             color: #d4a017;
             margin-bottom: 20px;
@@ -285,15 +288,18 @@ while ($row = mysqli_fetch_assoc($result)) {
                                 </select>
                             </div>
                             <div class="row mb-3">
-                                <div class="col-md-6">
+                            <div class="col-md-6">
                                     <label for="check-in" class="form-label">Check-In Date & Time</label>
-                                    <input type="date" class="form-control" id="check-in" name="check_in" 
-                                       required min="<?php echo date('Y-m-d'); ?>" value="<?php echo date('Y-m-d'); ?>">
+                                    <input type="datetime-local" class="form-control" id="check-in" name="check_in"
+                                        required
+                                        value="<?php echo isset($check_in) ? date('Y-m-d\TH:i', strtotime($check_in)) : $check_in_default; ?>">
                                 </div>
+
                                 <div class="col-md-6">
                                     <label for="check-out" class="form-label">Check-Out Date & Time</label>
-                                    <input type="date" class="form-control" id="check-out" name="check_out" 
-                                       required min="<?php echo date('Y-m-d', strtotime('+1 day')); ?>" value="<?php echo date('Y-m-d', strtotime('+1 day')); ?>">
+                                    <input type="datetime-local" class="form-control" id="check-out" name="check_out"
+                                        required
+                                        value="<?php echo isset($check_out) ? date('Y-m-d\TH:i', strtotime($check_out)) : $check_out_default; ?>">
                                 </div>
                             </div>
                             <div class="row mb-3">
@@ -493,6 +499,37 @@ while ($row = mysqli_fetch_assoc($result)) {
                 navbar.classList.remove('navbar-dark-bg');
             }
         });
+
+        // Set minimum dates for check-in and check-out
+        const checkInInput = document.getElementById('check-in');
+        const checkOutInput = document.getElementById('check-out');
+        
+        checkInInput.addEventListener('change', function() {
+            const checkInDate = new Date(this.value);
+            const nextDay = new Date(checkInDate);
+            nextDay.setDate(nextDay.getDate() + 1);
+            nextDay.setHours(12, 0, 0); // Set to 12:00 PM
+            checkOutInput.min = nextDay.toISOString().slice(0, 16);
+            
+            if (checkOutInput.value && new Date(checkOutInput.value) <= checkInDate) {
+                checkOutInput.value = nextDay.toISOString().slice(0, 16);
+            }
+        });
+
+        // Set initial check-in time to 2:00 PM if not set
+        if (!checkInInput.value) {
+            const now = new Date();
+            now.setHours(14, 0, 0);
+            checkInInput.value = now.toISOString().slice(0, 16);
+        }
+
+        // Set initial check-out time to 12:00 PM next day if not set
+        if (!checkOutInput.value) {
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            tomorrow.setHours(12, 0, 0);
+            checkOutInput.value = tomorrow.toISOString().slice(0, 16);
+        }
     </script>
 </body>
 </html> 

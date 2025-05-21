@@ -286,12 +286,12 @@ $bookings = mysqli_stmt_get_result($stmt);
                         </div>
                         <div class="col-md-3">
                             <label for="date_from" class="form-label">Date From</label>
-                            <input type="date" class="form-control" id="date_from" name="date_from" 
+                            <input type="datetime-local" class="form-control" id="date_from" name="date_from" 
                                    value="<?php echo isset($_GET['date_from']) ? $_GET['date_from'] : ''; ?>">
                         </div>
                         <div class="col-md-3">
                             <label for="date_to" class="form-label">Date To</label>
-                            <input type="date" class="form-control" id="date_to" name="date_to"
+                            <input type="datetime-local" class="form-control" id="date_to" name="date_to"
                                    value="<?php echo isset($_GET['date_to']) ? $_GET['date_to'] : ''; ?>">
                         </div>
                         <div class="col-md-3 d-flex align-items-end">
