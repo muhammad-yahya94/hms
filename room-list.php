@@ -8,6 +8,8 @@ $check_out = isset($_GET['check_out']) ? $_GET['check_out'] : date('Y-m-d', strt
 $adults = isset($_GET['adults']) ? (int)$_GET['adults'] : 2;
 $children = isset($_GET['children']) ? (int)$_GET['children'] : 0;
 $room_type = isset($_GET['room_type']) ? $_GET['room_type'] : '';
+$city = isset($_GET['city']) ? $_GET['city'] : '';
+$max_price = isset($_GET['max_price']) ? (float)$_GET['max_price'] : 0;
 
 // Build the SQL query
 $sql = "SELECT r.*, h.name as hotel_name, h.city, h.address, h.image_url as hotel_image
@@ -16,14 +18,28 @@ $sql = "SELECT r.*, h.name as hotel_name, h.city, h.address, h.image_url as hote
 $params = array();
 $types = "";
 
+$where_conditions = array();
+
 if (!empty($room_type)) {
-    $sql .= " WHERE r.room_type = ?";
+    $where_conditions[] = "r.room_type = ?";
     $params[] = $room_type;
     $types .= "s";
 }
 
+if (!empty($city)) {
+    $where_conditions[] = "h.city = ?";
+    $params[] = $city;
+    $types .= "s";
+}
+
+if ($max_price > 0) {
+    $where_conditions[] = "r.price_per_night <= ?";
+    $params[] = $max_price;
+    $types .= "d";
+}
+
 if (!empty($check_in) && !empty($check_out)) {
-    $sql .= (!empty($room_type) ? " AND" : " WHERE") . " r.id NOT IN (
+    $where_conditions[] = "r.id NOT IN (
         SELECT room_id FROM bookings 
         WHERE (check_in_date <= ? AND check_out_date >= ?)
         OR (check_in_date <= ? AND check_out_date >= ?)
@@ -33,9 +49,13 @@ if (!empty($check_in) && !empty($check_out)) {
     $types .= "ssssss";
 }
 
-$sql .= (!empty($room_type) || !empty($check_in) ? " AND" : " WHERE") . " r.capacity >= ?";
+$where_conditions[] = "r.capacity >= ?";
 $params[] = $adults + $children;
 $types .= "i";
+
+if (!empty($where_conditions)) {
+    $sql .= " WHERE " . implode(" AND ", $where_conditions);
+}
 
 $stmt = mysqli_prepare($conn, $sql);
 if (!empty($params)) {

@@ -272,9 +272,17 @@ while ($row = mysqli_fetch_assoc($result)) {
                         <h3 class="text-center">Find Your Perfect Stay</h3>
                         <form action="room-list.php" method="GET" class="search-form">
                             <div class="mb-3">
-                                <label for="location" class="form-label">Location</label>
-                                <input type="text" class="form-control" id="location" name="location" 
-                                       placeholder="Enter city or hotel name">
+                                <label for="city" class="form-label">Location</label>
+                                <select class="form-select" id="city" name="city">
+                                    <option value="">All Cities</option>
+                                    <?php
+                                    $cities_sql = "SELECT DISTINCT city FROM hotels ORDER BY city";
+                                    $cities_result = mysqli_query($conn, $cities_sql);
+                                    while ($city = mysqli_fetch_assoc($cities_result)) {
+                                        echo '<option value="' . htmlspecialchars($city['city']) . '">' . htmlspecialchars($city['city']) . '</option>';
+                                    }
+                                    ?>
+                                </select>
                             </div>
                             <div class="mb-3">
                                 <label for="check-in" class="form-label">Check-In</label>
@@ -289,20 +297,29 @@ while ($row = mysqli_fetch_assoc($result)) {
                             <div class="row mb-3">
                                 <div class="col-md-6">
                                     <label for="adults" class="form-label">Adults</label>
-                                    <select class="form-select" id="adults" name="adults">
-                                        <?php for($i = 1; $i <= 4; $i++): ?>
-                                            <option value="<?php echo $i; ?>" <?php echo $i == 2 ? 'selected' : ''; ?>><?php echo $i; ?> Adult<?php echo $i > 1 ? 's' : ''; ?></option>
-                                        <?php endfor; ?>
-                                    </select>
+                                    <input type="number" class="form-control" id="adults" name="adults" 
+                                           min="1" max="4" value="2" required>
                                 </div>
                                 <div class="col-md-6">
                                     <label for="children" class="form-label">Children</label>
-                                    <select class="form-select" id="children" name="children">
-                                        <?php for($i = 0; $i <= 3; $i++): ?>
-                                            <option value="<?php echo $i; ?>"><?php echo $i; ?> Child<?php echo $i != 1 ? 'ren' : ''; ?></option>
-                                        <?php endfor; ?>
-                                    </select>
+                                    <input type="number" class="form-control" id="children" name="children" 
+                                           min="0" max="3" value="0" required>
                                 </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="room_type" class="form-label">Room Type</label>
+                                <select class="form-select" id="room_type" name="room_type">
+                                    <option value="">All Types</option>
+                                    <option value="standard">Standard</option>
+                                    <option value="deluxe">Deluxe</option>
+                                    <option value="suite">Suite</option>
+                                    <option value="presidential_suite">Presidential Suite</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="max_price" class="form-label">Maximum Price (PKR)</label>
+                                <input type="number" class="form-control" id="max_price" name="max_price" 
+                                       min="0" placeholder="Enter maximum price">
                             </div>
                             <div class="d-grid">
                                 <button type="submit" class="btn btn-booking">
