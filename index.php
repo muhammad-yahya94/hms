@@ -56,12 +56,12 @@ $check_out = isset($_GET['check_out']) ? $_GET['check_out'] : date('Y-m-d 12:00'
             padding: 40px;
             border-radius: 10px;
         }
-        /* .search-form {
+        .search-form {
             background-color: rgba(255, 255, 255, 0.9);
             padding: 30px;
             border-radius: 10px;
             color: #333;
-        } */
+        }
         .search-form h3 {
             color: #d4a017;
             margin-bottom: 20px;
@@ -287,20 +287,13 @@ $check_out = isset($_GET['check_out']) ? $_GET['check_out'] : date('Y-m-d 12:00'
                                     ?>
                                 </select>
                             </div>
-                            <div class="row mb-3">
-                            <div class="col-md-6">
-                                    <label for="check-in" class="form-label">Check-In Date & Time</label>
-                                    <input type="datetime-local" class="form-control" id="check-in" name="check_in"
-                                        required
-                                        value="<?php echo isset($check_in) ? date('Y-m-d\TH:i', strtotime($check_in)) : $check_in_default; ?>">
-                                </div>
-
-                                <div class="col-md-6">
-                                    <label for="check-out" class="form-label">Check-Out Date & Time</label>
-                                    <input type="datetime-local" class="form-control" id="check-out" name="check_out"
-                                        required
-                                        value="<?php echo isset($check_out) ? date('Y-m-d\TH:i', strtotime($check_out)) : $check_out_default; ?>">
-                                </div>
+                            <div class="form-group">
+                                <label for="check_in">Check-in Date & Time</label>
+                                <input type="datetime-local" class="form-control" id="check_in" name="check_in" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="check_out">Check-out Date & Time</label>
+                                <input type="datetime-local" class="form-control" id="check_out" name="check_out" required>
                             </div>
                             <div class="row mb-3">
                                  <div class="col-md-4">
@@ -500,36 +493,33 @@ $check_out = isset($_GET['check_out']) ? $_GET['check_out'] : date('Y-m-d 12:00'
             }
         });
 
-        // Set minimum dates for check-in and check-out
-        const checkInInput = document.getElementById('check-in');
-        const checkOutInput = document.getElementById('check-out');
-        
-        checkInInput.addEventListener('change', function() {
-            const checkInDate = new Date(this.value);
-            const nextDay = new Date(checkInDate);
-            nextDay.setDate(nextDay.getDate() + 1);
-            nextDay.setHours(12, 0, 0); // Set to 12:00 PM
-            checkOutInput.min = nextDay.toISOString().slice(0, 16);
+        document.addEventListener('DOMContentLoaded', function() {
+            const checkInInput = document.getElementById('check_in');
+            const checkOutInput = document.getElementById('check_out');
             
-            if (checkOutInput.value && new Date(checkOutInput.value) <= checkInDate) {
-                checkOutInput.value = nextDay.toISOString().slice(0, 16);
-            }
-        });
-
-        // Set initial check-in time to 2:00 PM if not set
-        if (!checkInInput.value) {
+            // Set default values to current date and time
             const now = new Date();
-            now.setHours(14, 0, 0);
-            checkInInput.value = now.toISOString().slice(0, 16);
-        }
-
-        // Set initial check-out time to 12:00 PM next day if not set
-        if (!checkOutInput.value) {
-            const tomorrow = new Date();
+            const tomorrow = new Date(now);
             tomorrow.setDate(tomorrow.getDate() + 1);
-            tomorrow.setHours(12, 0, 0);
+            
+            checkInInput.value = now.toISOString().slice(0, 16);
             checkOutInput.value = tomorrow.toISOString().slice(0, 16);
-        }
+            
+            // Validate check-out is after check-in
+            checkInInput.addEventListener('change', function() {
+                if (checkOutInput.value && checkOutInput.value <= this.value) {
+                    checkOutInput.value = '';
+                    alert('Check-out time must be after check-in time');
+                }
+            });
+            
+            checkOutInput.addEventListener('change', function() {
+                if (this.value <= checkInInput.value) {
+                    this.value = '';
+                    alert('Check-out time must be after check-in time');
+                }
+            });
+        });
     </script>
 </body>
 </html> 
