@@ -52,8 +52,19 @@ $sql = "SELECT r.*, h.name as hotel_name, h.city, h.address, h.image_url as hote
 $params = array();
 $types = "";
 
+// Add booking check parameters for display_status and booking dates
+if (!empty($check_in) && !empty($check_out)) {
+    $params = array_merge($params, [
+        $check_out, $check_in, $check_in, $check_in, $check_in, $check_out, // for display_status
+        $check_out, $check_in, $check_in, $check_in, $check_in, $check_out, // for booking_check_in
+        $check_out, $check_in, $check_in, $check_in, $check_in, $check_out  // for booking_check_out
+    ]);
+    $types .= "ssssssssssssssssss";
+}
+
 $where_conditions = array();
 
+// Apply user filters
 if ($hotel_id > 0) {
     $where_conditions[] = "r.hotel_id = ?";
     $params[] = $hotel_id;
@@ -76,16 +87,6 @@ if ($max_price > 0) {
     $where_conditions[] = "r.price_per_night <= ?";
     $params[] = $max_price;
     $types .= "d";
-}
-
-// Add booking check parameters for display_status and booking dates
-if (!empty($check_in) && !empty($check_out)) {
-    $params = array_merge($params, [
-        $check_out, $check_in, $check_in, $check_in, $check_in, $check_out, // for display_status
-        $check_out, $check_in, $check_in, $check_in, $check_in, $check_out, // for booking_check_in
-        $check_out, $check_in, $check_in, $check_in, $check_in, $check_out  // for booking_check_out
-    ]);
-    $types .= "ssssssssssssssssss";
 }
 
 $where_conditions[] = "r.capacity >= ?";
@@ -138,12 +139,6 @@ $rooms_found = mysqli_num_rows($result) > 0;
             background-color: rgba(0, 0, 0, 0.6);
             padding: 40px;
             border-radius: 10px;
-        }
-        .search-form {
-            background-color: rgba(255, 255, 255, 0.9);
-            padding: 30px;
-            border-radius: 10px;
-            color: #333;
         }
         .search-form h3 {
             color: #d4a017;

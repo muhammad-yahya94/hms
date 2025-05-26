@@ -114,7 +114,7 @@ if (isset($_POST['edit_booking'])) {
                     if (mysqli_stmt_execute($stmt)) {
                         $success = "Booking updated successfully.";
                     } else {
-                        $error = "Error updating booking: " . mysqli_error($conn);
+                        $error = "Error updating booking: " . mysqli_error($conn);  
                     }
                 }
             }
@@ -281,12 +281,19 @@ $bookings = mysqli_stmt_get_result($stmt);
                 <h2 class="mb-4">My Bookings</h2>
                 
                 <?php if ($error): ?>
-                    <div class="alert alert-danger"><?php echo $error; ?></div>
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <?php echo htmlspecialchars($error); ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
                 <?php endif; ?>
-                
+
                 <?php if ($success): ?>
-                    <div class="alert alert-success"><?php echo $success; ?></div>
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <?php echo htmlspecialchars($success); ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
                 <?php endif; ?>
+
                 
                 <?php if (mysqli_num_rows($bookings) > 0): ?>
                     <?php while($booking = mysqli_fetch_assoc($bookings)): ?>

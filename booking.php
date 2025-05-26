@@ -211,6 +211,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && !$error) {
                     <div class="col-md-6">
                         <div class="booking-details">
                             <h4>Booking Details</h4>
+                            <p><strong>Room Number:</strong> <?php echo htmlspecialchars($room_id); ?></p>
                             <p><strong>Check-in:</strong> <?php echo date('F j, Y h:i A', strtotime($check_in)); ?></p>
                             <p><strong>Check-out:</strong> <?php echo date('F j, Y h:i A', strtotime($check_out)); ?></p>
                             <p><strong>Number of Hours:</strong> <?php echo $hours; ?></p>

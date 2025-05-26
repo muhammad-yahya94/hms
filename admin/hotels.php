@@ -2,40 +2,14 @@
 require_once '../config/database.php';
 require_once '../includes/session.php';
 
-// Require admin role
+// Ensure the user is an admin
 requireAdmin();
 
 $error = '';
 $success = '';
+$user_id = (int)$_SESSION['user_id'];
 
-// Handle hotel deletion
-if (isset($_POST['delete_hotel'])) {
-    $hotel_id = (int)$_POST['hotel_id'];
-    
-    // Check if hotel has any bookings
-    $sql = "SELECT COUNT(*) as count FROM bookings WHERE hotel_id = ?";
-    $stmt = mysqli_prepare($conn, $sql);
-    mysqli_stmt_bind_param($stmt, "i", $hotel_id);
-    mysqli_stmt_execute($stmt);
-    $result = mysqli_stmt_get_result($stmt);
-    $booking_count = mysqli_fetch_assoc($result)['count'];
-    
-    if ($booking_count > 0) {
-        $error = "Cannot delete hotel with existing bookings.";
-    } else {
-        $sql = "DELETE FROM hotels WHERE id = ?";
-        $stmt = mysqli_prepare($conn, $sql);
-        mysqli_stmt_bind_param($stmt, "i", $hotel_id);
-        
-        if (mysqli_stmt_execute($stmt)) {
-            $success = "Hotel deleted successfully.";
-        } else {
-            $error = "Error deleting hotel.";
-        }
-    }
-}
-
-// Handle hotel addition/editing
+// Handle hotel addition
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_hotel'])) {
     $name = trim($_POST['name']);
     $description = trim($_POST['description']);
@@ -44,88 +18,223 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['save_hotel'])) {
     $phone = trim($_POST['phone']);
     $email = trim($_POST['email']);
     $website = trim($_POST['website']);
-    // $image_url = trim($_POST['image_url']); // Removed URL handling
     
-    // Handle image upload
-    $image_path = null; // Initialize image_path as null
-    if (isset($_FILES['hotel_image']) && $_FILES['hotel_image']['error'] === UPLOAD_ERR_OK) {
-        $upload_dir = '../uploads/hotels/';
-        // Create directory if it doesn't exist
-        if (!is_dir($upload_dir)) {
-            mkdir($upload_dir, 0777, true);
-        }
-        $file_extension = strtolower(pathinfo($_FILES['hotel_image']['name'], PATHINFO_EXTENSION));
-        $allowed_extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-        
-        if (in_array($file_extension, $allowed_extensions)) {
-            $new_filename = uniqid('hotel_') . '.' . $file_extension;
-            $upload_path = $upload_dir . $new_filename;
-            
-            if (move_uploaded_file($_FILES['hotel_image']['tmp_name'], $upload_path)) {
-                $image_path = 'uploads/hotels/' . $new_filename; // Path to save in database
-            } else {
-                $error = "Error uploading image.";
-            }
-        } else {
-            $error = "Invalid file type. Allowed types: JPG, JPEG, PNG, GIF, WEBP";
-        }
-    } else if (isset($_POST['hotel_id'])) {
-        // If editing and no new file uploaded, retain existing image path
-        $hotel_id = (int)$_POST['hotel_id'];
-        $sql = "SELECT image_url FROM hotels WHERE id = ?";
-        $stmt = mysqli_prepare($conn, $sql);
-        mysqli_stmt_bind_param($stmt, "i", $hotel_id);
-        mysqli_stmt_execute($stmt);
-        $result = mysqli_stmt_get_result($stmt);
-        $row = mysqli_fetch_assoc($result);
-        if ($row && !empty($row['image_url'])) {
-            $image_path = $row['image_url'];
-        }
-    }
-
-    
+    // Validate inputs
     if (empty($name) || empty($address) || empty($city)) {
-        $error = "Required fields cannot be empty.";
-    } else if (!empty($error)) {
-        // Error already set during file upload
+        $error = "Required fields (Name, Address, City) cannot be empty.";
+    } elseif ($phone && !preg_match('/^[0-9+\-\(\) ]{10,20}$/', $phone)) {
+        $error = "Invalid phone number format.";
+    } elseif ($email && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error = "Invalid email format.";
+    } elseif ($website && !filter_var($website, FILTER_VALIDATE_URL)) {
+        $error = "Invalid website URL.";
     } else {
-        if (isset($_POST['hotel_id'])) {
-            // Update existing hotel
-            $hotel_id = (int)$_POST['hotel_id'];
-            $sql = "UPDATE hotels SET name = ?, description = ?, address = ?, city = ?, 
-                    phone = ?, email = ?, website = ?, image_url = ? WHERE id = ?"; // Updated SQL
-            $stmt = mysqli_prepare($conn, $sql);
-            mysqli_stmt_bind_param($stmt, "sssssssi", $name, $description, $address, $city, 
-                                 $phone, $email, $website, $image_path, $hotel_id); // Updated parameters
-        } else {
-            // Add new hotel
-            $sql = "INSERT INTO hotels (name, description, address, city, phone, email, website, image_url) 
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)"; // Updated SQL
-            $stmt = mysqli_prepare($conn, $sql);
-            mysqli_stmt_bind_param($stmt, "ssssssss", $name, $description, $address, $city, 
-                                 $phone, $email, $website, $image_path); // Updated parameters
+        // Handle image upload
+        $image_path = null;
+        $image_uploaded = false;
+        if (isset($_FILES['hotel_image']) && $_FILES['hotel_image']['error'] === UPLOAD_ERR_OK) {
+            $upload_dir = '../Uploads/hotels/';
+            if (!is_dir($upload_dir)) {
+                if (!mkdir($upload_dir, 0777, true)) {
+                    $error = "Failed to create upload directory.";
+                }
+            }
+            if (!$error) {
+                $file_extension = strtolower(pathinfo($_FILES['hotel_image']['name'], PATHINFO_EXTENSION));
+                $allowed_extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+                
+                if (!in_array($file_extension, $allowed_extensions)) {
+                    $error = "Invalid file type. Allowed types: JPG, JPEG, PNG, GIF, WEBP";
+                } elseif ($_FILES['hotel_image']['size'] > 5 * 1024 * 1024) {
+                    $error = "Image file size exceeds 5MB.";
+                } else {
+                    $new_filename = uniqid('hotel_') . '.' . $file_extension;
+                    $upload_path = $upload_dir . $new_filename;
+                    
+                    if (move_uploaded_file($_FILES['hotel_image']['tmp_name'], $upload_path)) {
+                        $image_path = 'Uploads/hotels/' . $new_filename;
+                        $image_uploaded = true;
+                    } else {
+                        $error = "Error uploading image.";
+                    }
+                }
+            }
         }
         
-        if (mysqli_stmt_execute($stmt)) {
-            $success = isset($_POST['hotel_id']) ? "Hotel updated successfully." : "Hotel added successfully.";
-        } else {
-            $error = "Error saving hotel.";
+        if (!$error) {
+            // Insert hotel into database
+            $sql = "INSERT INTO hotels (name, description, address, city, phone, email, website, image_url, vendor_id) 
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            $stmt = mysqli_prepare($conn, $sql);
+            if (!$stmt) {
+                $error = "Database error: Unable to prepare insert query.";
+            } else {
+                mysqli_stmt_bind_param($stmt, "ssssssssi", $name, $description, $address, $city, 
+                                      $phone, $email, $website, $image_path, $user_id);
+                if (!mysqli_stmt_execute($stmt)) {
+                    $error = "Error adding hotel: " . mysqli_error($conn);
+                    if ($image_uploaded && $image_path && file_exists('../' . $image_path)) {
+                        unlink('../' . $image_path);
+                    }
+                } elseif (mysqli_stmt_affected_rows($stmt) !== 1) {
+                    $error = "Error: Hotel not inserted.";
+                    if ($image_uploaded && $image_path && file_exists('../' . $image_path)) {
+                        unlink('../' . $image_path);
+                    }
+                } else {
+                    $success = "Hotel added successfully.";
+                }
+                mysqli_stmt_close($stmt);
+            }
         }
     }
 }
 
-// Get all hotels
-$sql = "SELECT * FROM hotels ORDER BY name ASC";
-$hotels = mysqli_query($conn, $sql);
+// Handle hotel update
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_hotel'])) {
+    $hotel_id = (int)$_POST['hotel_id'];
+    $name = trim($_POST['name']);
+    $description = trim($_POST['description']);
+    $address = trim($_POST['address']);
+    $city = trim($_POST['city']);
+    $phone = trim($_POST['phone']);
+    $email = trim($_POST['email']);
+    $website = trim($_POST['website']);
+    
+    // Validate inputs
+    if (empty($name) || empty($address) || empty($city)) {
+        $error = "Required fields (Name, Address, City) cannot be empty.";
+    } elseif ($phone && !preg_match('/^[0-9+\-\(\) ]{10,20}$/', $phone)) {
+        $error = "Invalid phone number format.";
+    } elseif ($email && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error = "Invalid email format.";
+    } elseif ($website && !filter_var($website, FILTER_VALIDATE_URL)) {
+        $error = "Invalid website URL.";
+    } else {
+        // Handle image upload if a new image is provided
+        $image_path = $_POST['existing_image'];
+        $image_uploaded = false;
+        
+        if (isset($_FILES['hotel_image']) && $_FILES['hotel_image']['error'] === UPLOAD_ERR_OK) {
+            $upload_dir = '../Uploads/hotels/';
+            if (!is_dir($upload_dir)) {
+                if (!mkdir($upload_dir, 0777, true)) {
+                    $error = "Failed to create upload directory.";
+                }
+            }
+            if (!$error) {
+                $file_extension = strtolower(pathinfo($_FILES['hotel_image']['name'], PATHINFO_EXTENSION));
+                $allowed_extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+                
+                if (!in_array($file_extension, $allowed_extensions)) {
+                    $error = "Invalid file type. Allowed types: JPG, JPEG, PNG, GIF, WEBP";
+                } elseif ($_FILES['hotel_image']['size'] > 5 * 1024 * 1024) {
+                    $error = "Image file size exceeds 5MB.";
+                } else {
+                    $new_filename = uniqid('hotel_') . '.' . $file_extension;
+                    $upload_path = $upload_dir . $new_filename;
+                    
+                    if (move_uploaded_file($_FILES['hotel_image']['tmp_name'], $upload_path)) {
+                        // Delete old image if it exists
+                        if ($image_path && file_exists('../' . $image_path)) {
+                            unlink('../' . $image_path);
+                        }
+                        $image_path = 'Uploads/hotels/' . $new_filename;
+                        $image_uploaded = true;
+                    } else {
+                        $error = "Error uploading image.";
+                    }
+                }
+            }
+        }
+        
+        if (!$error) {
+            // Update hotel in database
+            $sql = "UPDATE hotels SET name=?, description=?, address=?, city=?, phone=?, email=?, website=?, image_url=? 
+                    WHERE id=? AND vendor_id=?";
+            $stmt = mysqli_prepare($conn, $sql);
+            if (!$stmt) {
+                $error = "Database error: Unable to prepare update query.";
+            } else {
+                mysqli_stmt_bind_param($stmt, "ssssssssii", $name, $description, $address, $city, 
+                                      $phone, $email, $website, $image_path, $hotel_id, $user_id);
+                if (!mysqli_stmt_execute($stmt)) {
+                    $error = "Error updating hotel: " . mysqli_error($conn);
+                    if ($image_uploaded && $image_path && file_exists('../' . $image_path)) {
+                        unlink('../' . $image_path);
+                    }
+                } else {
+                    $success = "Hotel updated successfully.";
+                }
+                mysqli_stmt_close($stmt);
+            }
+        }
+    }
+}
+
+// Handle hotel deletion
+if (isset($_GET['delete'])) {
+    $hotel_id = (int)$_GET['delete'];
+    
+    // First get the image path to delete the file
+    $sql = "SELECT image_url FROM hotels WHERE id=? AND vendor_id=?";
+    $stmt = mysqli_prepare($conn, $sql);
+    mysqli_stmt_bind_param($stmt, "ii", $hotel_id, $user_id);
+    mysqli_stmt_execute($stmt);
+    mysqli_stmt_bind_result($stmt, $image_path);
+    mysqli_stmt_fetch($stmt);   
+    mysqli_stmt_close($stmt);
+    
+    // Delete the hotel
+    $sql = "DELETE FROM hotels WHERE id=? AND vendor_id=?";
+    $stmt = mysqli_prepare($conn, $sql);
+    mysqli_stmt_bind_param($stmt, "ii", $hotel_id, $user_id);
+    if (mysqli_stmt_execute($stmt)) {
+        // Delete the associated image file if it exists
+        if ($image_path && file_exists('../' . $image_path)) {
+            unlink('../' . $image_path);
+        }
+        $success = "Hotel deleted successfully.";
+    } else {
+        $error = "Error deleting hotel: " . mysqli_error($conn);
+    }
+    mysqli_stmt_close($stmt);
+}
+
+// Fetch hotels for the current admin (vendor)
+$sql = "SELECT * FROM hotels WHERE vendor_id = ? ORDER BY name ASC";
+$stmt = mysqli_prepare($conn, $sql);
+if (!$stmt) {
+    $error = "Database error: Unable to prepare hotel retrieval query.";
+} else {
+    mysqli_stmt_bind_param($stmt, "i", $user_id);
+    mysqli_stmt_execute($stmt);
+    $hotels = mysqli_stmt_get_result($stmt);
+    mysqli_stmt_close($stmt);
+}
+
+// Fetch hotel details for editing
+$edit_hotel = null;
+if (isset($_GET['edit'])) {
+    $hotel_id = (int)$_GET['edit'];
+    $sql = "SELECT * FROM hotels WHERE id=? AND vendor_id=?";
+    $stmt = mysqli_prepare($conn, $sql);
+    mysqli_stmt_bind_param($stmt, "ii", $hotel_id, $user_id);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $edit_hotel = mysqli_fetch_assoc($result);
+    mysqli_stmt_close($stmt);
+}
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hotel Management - Jhang Hotels</title>
+    <title>Hotel Management - HMS</title>
     <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <!-- Google Fonts: Poppins -->
@@ -194,29 +303,32 @@ $hotels = mysqli_query($conn, $sql);
             background-color: #b38b12;
             transform: translateY(-2px);
         }
-        .btn-edit {
-            background-color: #28a745;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 5px;
-            transition: all 0.3s;
-        }
-        .btn-edit:hover {
-            background-color: #218838;
-            transform: translateY(-2px);
-        }
-        .btn-delete {
+        .btn-danger-custom {
             background-color: #dc3545;
             color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 5px;
-            transition: all 0.3s;
         }
-        .btn-delete:hover {
-            background-color: #c82333;
-            transform: translateY(-2px);
+        .btn-danger-custom:hover {
+            background-color: #bb2d3b;
+            color: white;
+        }
+        .alert {
+            margin-bottom: 20px;
+        }
+        .hotel-details {
+            margin-top: 15px;
+        }
+        .hotel-details p {
+            margin-bottom: 5px;
+        }
+        .hotel-details-label {
+            font-weight: 500;
+            color: #555;
+        }
+        .action-buttons {
+            margin-top: 15px;
+        }
+        .modal-title {
+            color: #d4a017;
         }
     </style>
 </head>
@@ -261,103 +373,142 @@ $hotels = mysqli_query($conn, $sql);
                 </div>
 
                 <?php if ($error): ?>
-                    <div class="alert alert-danger"><?php echo $error; ?></div>
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <?php echo htmlspecialchars($error); ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
                 <?php endif; ?>
 
                 <?php if ($success): ?>
-                    <div class="alert alert-success"><?php echo $success; ?></div>
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <?php echo htmlspecialchars($success); ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
                 <?php endif; ?>
+
 
                 <!-- Hotels List -->
                 <div class="row">
-                    <?php while($hotel = mysqli_fetch_assoc($hotels)): ?>
-                        <div class="col-md-6 col-lg-4">
-                            <div class="hotel-card">
-                                <img src="<?php echo htmlspecialchars($hotel['image_url']); ?>" 
-                                     alt="<?php echo htmlspecialchars($hotel['name']); ?>"
-                                     onerror="this.src='https://images.unsplash.com/photo-1566073771259-6a8506099945';">
-                                <h4><?php echo htmlspecialchars($hotel['name']); ?></h4>
-                                <p class="text-muted">
-                                    <i class="fas fa-map-marker-alt"></i> 
-                                    <?php echo htmlspecialchars($hotel['city']); ?>
-                                </p>
-                                <p><?php echo htmlspecialchars(substr($hotel['description'], 0, 100)) . '...'; ?></p>
-                                <div class="d-flex gap-2">
-                                    <button type="button" class="btn btn-edit" 
-                                            onclick="editHotel(<?php echo htmlspecialchars(json_encode($hotel)); ?>)">
-                                        <i class="fas fa-edit"></i> Edit
-                                    </button>
-                                    <form method="POST" class="d-inline" 
-                                          onsubmit="return confirm('Are you sure you want to delete this hotel?');">
-                                        <input type="hidden" name="hotel_id" value="<?php echo $hotel['id']; ?>">
-                                        <button type="submit" name="delete_hotel" class="btn btn-delete">
+                    <?php if (mysqli_num_rows($hotels) > 0): ?>
+                        <?php while($hotel = mysqli_fetch_assoc($hotels)): ?>
+                            <div class="col-md-6 col-lg-4">
+                                <div class="hotel-card">
+                                    <img src="../<?php echo htmlspecialchars($hotel['image_url'] ?? 'images/placeholder.jpg'); ?>" 
+                                         alt="<?php echo htmlspecialchars($hotel['name']); ?>"
+                                         onerror="this.src='https://images.unsplash.com/photo-1566073771259-6a8506099945';">
+                                    <h4><?php echo htmlspecialchars($hotel['name']); ?></h4>
+                                    <p class="text-muted">
+                                        <i class="fas fa-map-marker-alt"></i> 
+                                        <?php echo htmlspecialchars($hotel['city']); ?>
+                                    </p>
+                                    
+                                    <div class="hotel-details">
+                                        <p><span class="hotel-details-label">Address:</span> <?php echo htmlspecialchars($hotel['address']); ?></p>
+                                        <?php if ($hotel['phone']): ?>
+                                            <p><span class="hotel-details-label">Phone:</span> <?php echo htmlspecialchars($hotel['phone']); ?></p>
+                                        <?php endif; ?>
+                                        <?php if ($hotel['email']): ?>
+                                            <p><span class="hotel-details-label">Email:</span> <?php echo htmlspecialchars($hotel['email']); ?></p>
+                                        <?php endif; ?>
+                                        <?php if ($hotel['website']): ?>
+                                            <p><span class="hotel-details-label">Website:</span> <a href="<?php echo htmlspecialchars($hotel['website']); ?>" target="_blank">Visit</a></p>
+                                        <?php endif; ?>
+                                        <p><span class="hotel-details-label">Description:</span> <?php echo htmlspecialchars(substr($hotel['description'] ?? '', 0, 100)); ?>...</p>
+                                    </div>
+                                    
+                                    <div class="action-buttons d-flex justify-content-between">
+                                        <a href="?edit=<?php echo $hotel['id']; ?>" class="btn btn-sm btn-custom">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </a>
+                                        <a href="?delete=<?php echo $hotel['id']; ?>" class="btn btn-sm btn-danger-custom" 
+                                           onclick="return confirm('Are you sure you want to delete this hotel?')">
                                             <i class="fas fa-trash"></i> Delete
-                                        </button>
-                                    </form>
+                                        </a>
+                                    </div>
                                 </div>
                             </div>
+                        <?php endwhile; ?>
+                    <?php else: ?>
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                No hotels found. Click "Add New Hotel" to create one.
+                            </div>
                         </div>
-                    <?php endwhile; ?>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Hotel Modal -->
+    <!-- Hotel Modal (Add/Edit) -->
     <div class="modal fade" id="hotelModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Add/Edit Hotel</h5>
+                    <h5 class="modal-title"><?php echo isset($edit_hotel) ? 'Edit Hotel' : 'Add Hotel'; ?></h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <form method="POST" action="" id="hotelForm" enctype="multipart/form-data">
-                        <input type="hidden" name="hotel_id" id="hotel_id">
+                        <?php if (isset($edit_hotel)): ?>
+                            <input type="hidden" name="hotel_id" value="<?php echo $edit_hotel['id']; ?>">
+                            <input type="hidden" name="existing_image" value="<?php echo htmlspecialchars($edit_hotel['image_url'] ?? ''); ?>">
+                        <?php endif; ?>
+                        
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="name" class="form-label">Hotel Name *</label>
-                                <input type="text" class="form-control" id="name" name="name" required>
+                                <input type="text" class="form-control" id="name" name="name" 
+                                       value="<?php echo isset($edit_hotel) ? htmlspecialchars($edit_hotel['name']) : ''; ?>" required>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="hotel_image" class="form-label">Hotel Image</label>
                                 <input type="file" class="form-control" id="hotel_image" name="hotel_image" accept="image/*">
-                                <div id="current_image_preview" class="mt-2" style="display: none;">
-                                    <img src="" alt="Current Hotel Image" class="img-thumbnail" style="max-height: 100px;">
-                                </div>
+                                <?php if (isset($edit_hotel) && $edit_hotel['image_url']): ?>
+                                    <small class="text-muted">Current image: <?php echo basename($edit_hotel['image_url']); ?></small>
+                                <?php endif; ?>
                             </div>
                         </div>
                         <div class="mb-3">
                             <label for="description" class="form-label">Description</label>
-                            <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                            <textarea class="form-control" id="description" name="description" rows="3"><?php 
+                                echo isset($edit_hotel) ? htmlspecialchars($edit_hotel['description']) : ''; 
+                            ?></textarea>
                         </div>
                         <div class="mb-3">
                             <label for="address" class="form-label">Address *</label>
-                            <input type="text" class="form-control" id="address" name="address" required>
+                            <input type="text" class="form-control" id="address" name="address" 
+                                   value="<?php echo isset($edit_hotel) ? htmlspecialchars($edit_hotel['address']) : ''; ?>" required>
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="city" class="form-label">City *</label>
-                                <input type="text" class="form-control" id="city" name="city" required>
+                                <input type="text" class="form-control" id="city" name="city" 
+                                       value="<?php echo isset($edit_hotel) ? htmlspecialchars($edit_hotel['city']) : ''; ?>" required>
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="phone" class="form-label">Phone</label>
-                                <input type="tel" class="form-control" id="phone" name="phone">
+                                <input type="tel" class="form-control" id="phone" name="phone" 
+                                       value="<?php echo isset($edit_hotel) ? htmlspecialchars($edit_hotel['phone']) : ''; ?>">
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="email" class="form-label">Email</label>
-                                <input type="email" class="form-control" id="email" name="email">
+                                <input type="email" class="form-control" id="email" name="email" 
+                                       value="<?php echo isset($edit_hotel) ? htmlspecialchars($edit_hotel['email']) : ''; ?>">
                             </div>
                         </div>
                         <div class="mb-3">
                             <label for="website" class="form-label">Website</label>
-                            <input type="url" class="form-control" id="website" name="website">
+                            <input type="url" class="form-control" id="website" name="website" 
+                                   value="<?php echo isset($edit_hotel) ? htmlspecialchars($edit_hotel['website']) : ''; ?>">
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                            <button type="submit" name="save_hotel" class="btn btn-custom">Save Hotel</button>
+                            <button type="submit" name="<?php echo isset($edit_hotel) ? 'update_hotel' : 'save_hotel'; ?>" class="btn btn-custom">
+                                <?php echo isset($edit_hotel) ? 'Update Hotel' : 'Save Hotel'; ?>
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -366,35 +517,16 @@ $hotels = mysqli_query($conn, $sql);
     </div>
 
     <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    
     <script>
-        function editHotel(hotel) {
-            document.getElementById('hotel_id').value = hotel.id;
-            document.getElementById('name').value = hotel.name;
-            document.getElementById('description').value = hotel.description;
-            document.getElementById('address').value = hotel.address;
-            document.getElementById('city').value = hotel.city;
-            document.getElementById('phone').value = hotel.phone;
-            document.getElementById('email').value = hotel.email;
-            document.getElementById('website').value = hotel.website;
-            // document.getElementById('image_url').value = hotel.image_url; // Removed URL line
-            
-            // Handle existing image display for editing
-            const currentImagePreview = document.getElementById('current_image_preview');
-            const currentImage = currentImagePreview.querySelector('img');
-            if (hotel.image_url) {
-                currentImage.src = '../' + hotel.image_url; // Assuming image_url is relative path
-                currentImagePreview.style.display = 'block';
-            } else {
-                currentImage.src = '';
-                currentImagePreview.style.display = 'none';
-            }
-            
-            // Clear the file input when opening for edit
-            document.getElementById('hotel_image').value = '';
-
-            new bootstrap.Modal(document.getElementById('hotelModal')).show();
-        }
+        // Automatically show modal if editing
+        <?php if (isset($edit_hotel)): ?>
+            document.addEventListener('DOMContentLoaded', function() {
+                var hotelModal = new bootstrap.Modal(document.getElementById('hotelModal'));
+                hotelModal.show();
+            });
+        <?php endif; ?>
     </script>
 </body>
-</html> 
+</html>

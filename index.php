@@ -10,6 +10,14 @@ while ($row = mysqli_fetch_assoc($result)) {
     $featured_hotels[] = $row;
 }
 
+// Fetch all hotels
+$all_hotels = [];
+$sql = "SELECT * FROM hotels ORDER BY name ASC";
+$result = mysqli_query($conn, $sql);
+while ($row = mysqli_fetch_assoc($result)) {
+    $all_hotels[] = $row;
+}
+
 // Fetch room categories
 $room_categories = [];
 $sql = "SELECT DISTINCT room_type, MIN(price_per_night) as min_price, MAX(price_per_night) as max_price 
@@ -38,7 +46,7 @@ $check_out = isset($_GET['check_out']) ? $_GET['check_out'] : date('Y-m-d 12:00'
     <!-- Custom CSS -->
     <style>
         body {
-            font-family: 'Arial', sans-serif;
+            font-family: 'Poppins', sans-serif;
             background-color: #f8f9fa;
         }
         .hero-section {
@@ -162,9 +170,22 @@ $check_out = isset($_GET['check_out']) ? $_GET['check_out'] : date('Y-m-d 12:00'
         .section-padding {
             padding: 60px 0;
         }
+        .card {
+            border: none;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
         .card-img-top {
             height: 200px;
             object-fit: cover;
+        }
+        .card-body {
+            padding: 20px;
         }
         .footer {
             background-color: #1a1a1a;
@@ -175,9 +196,13 @@ $check_out = isset($_GET['check_out']) ? $_GET['check_out'] : date('Y-m-d 12:00'
             background-color: #d4a017;
             color: white;
             border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            transition: all 0.3s;
         }
         .btn-custom:hover {
             background-color: #b38b12;
+            transform: translateY(-2px);
         }
         .room-category {
             background: white;
@@ -228,9 +253,6 @@ $check_out = isset($_GET['check_out']) ? $_GET['check_out'] : date('Y-m-d 12:00'
                                     <?php else: ?>
                                         <li><a class="dropdown-item" href="user/dashboard.php">My Dashboard</a></li>
                                     <?php endif; ?>
-                                    <!-- <li><a class="dropdown-item" href="user/bookings.php">My Bookings</a></li>
-                                    <li><a class="dropdown-item" href="user/profile.php">Profile</a></li> -->
-                                    <li><hr class="dropdown-divider"></li>
                                     <li><a class="dropdown-item" href="logout.php">Logout</a></li>
                                 </ul>
                             </li>
@@ -239,8 +261,7 @@ $check_out = isset($_GET['check_out']) ? $_GET['check_out'] : date('Y-m-d 12:00'
                                 <a class="nav-link" href="login.php">Login</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" href="register.php">Register</a>
-                            </li>
+                                <a class="nav-link" href="register.php">Register</a></li>
                         <?php endif; ?>
                     </ul>
                 </div>
@@ -267,7 +288,7 @@ $check_out = isset($_GET['check_out']) ? $_GET['check_out'] : date('Y-m-d 12:00'
                 <div class="col-lg-6">
                     <div class="hero-content">
                         <h3 class="text-center">Find Your Perfect Stay</h3>
-                        <form action="room-list.php" method="GET" class="search-form">
+                        <form action="room-list.php" method="GET" class="search-form needs-validation" novalidate>
                             <div class="mb-3">
                                 <label for="city" class="form-label">City Name</label>
                                 <select class="form-select" id="city" name="city">
@@ -281,23 +302,29 @@ $check_out = isset($_GET['check_out']) ? $_GET['check_out'] : date('Y-m-d 12:00'
                                     ?>
                                 </select>
                             </div>
-                            <div class="form-group mt-2">
-                                <label for="check_in">Check-in Date & Time</label>
-                                <input type="datetime-local" class="form-control" id="check_in" name="check_in" required>
+                            <div class="mb-3">
+                                <label for="check_in" class="form-label">Check-in Date & Time</label>
+                                <input type="datetime-local" class="form-control" id="check_in" name="check_in" value="<?php echo htmlspecialchars($check_in); ?>" required>
+                                <div class="invalid-feedback">
+                                    Please select a check-in date and time.
+                                </div>
                             </div>
-                            <div class="form-group mt-2">
-                                <label for="check_out">Check-out Date & Time</label>
-                                <input type="datetime-local" class="form-control" id="check_out" name="check_out" required>
+                            <div class="mb-3">
+                                <label for="check_out" class="form-label">Check-out Date & Time</label>
+                                <input type="datetime-local" class="form-control" id="check_out" name="check_out" value="<?php echo htmlspecialchars($check_out); ?>" required>
+                                <div class="invalid-feedback">
+                                    Please select a check-out date and time.
+                                </div>
                             </div>
-                            <div class="row mb-3 mt-2">
-                                 <div class="col-md-4">
+                            <div class="row mb-3">
+                                <div class="col-md-4">
                                     <label for="room_type" class="form-label">Room Type</label>
                                     <select class="form-select" id="room_type" name="room_type">
                                         <option value="">All Types</option>
                                         <?php
                                         $room_types_sql = "SELECT DISTINCT room_type FROM rooms ORDER BY room_type";
                                         $room_types_result = mysqli_query($conn, $room_types_sql);
-                                        while($type_row = mysqli_fetch_assoc($room_types_result)) {
+                                        while ($type_row = mysqli_fetch_assoc($room_types_result)) {
                                             $selected = (isset($_GET['room_type']) && $_GET['room_type'] == $type_row['room_type']) ? 'selected' : '';
                                             echo "<option value='" . htmlspecialchars($type_row['room_type']) . "' $selected>" . htmlspecialchars(ucfirst($type_row['room_type'])) . "</option>";
                                         }
@@ -307,18 +334,24 @@ $check_out = isset($_GET['check_out']) ? $_GET['check_out'] : date('Y-m-d 12:00'
                                 <div class="col-md-4">
                                     <label for="adults" class="form-label">Adults</label>
                                     <input type="number" class="form-control" id="adults" name="adults" 
-                                           min="1" max="4" value="2" required>
+                                           min="1" max="4" value="<?php echo isset($_GET['adults']) ? htmlspecialchars($_GET['adults']) : '2'; ?>" required>
+                                    <div class="invalid-feedback">
+                                        Please enter the number of adults (1-4).
+                                    </div>
                                 </div>
                                 <div class="col-md-4">
                                     <label for="children" class="form-label">Children</label>
                                     <input type="number" class="form-control" id="children" name="children" 
-                                           min="0" max="3" value="0" required>
+                                           min="0" max="3" value="<?php echo isset($_GET['children']) ? htmlspecialchars($_GET['children']) : '0'; ?>" required>
+                                    <div class="invalid-feedback">
+                                        Please enter the number of children (0-3).
+                                    </div>
                                 </div>
                             </div>
-                             <div class="mb-3">
-                                <label for="max_price" class="form-label">Room Price</label>
+                            <div class="mb-3">
+                                <label for="max_price" class="form-label">Max Room Price (PKR)</label>
                                 <input type="number" class="form-control" id="max_price" name="max_price" 
-                                       min="0" placeholder="Enter price" value="">
+                                       min="0" placeholder="Enter max price" value="<?php echo isset($_GET['max_price']) ? htmlspecialchars($_GET['max_price']) : ''; ?>">
                             </div>
                             <div class="d-grid">
                                 <button type="submit" class="btn btn-booking">
@@ -356,6 +389,36 @@ $check_out = isset($_GET['check_out']) ? $_GET['check_out'] : date('Y-m-d 12:00'
         </div>
     </section>
 
+    <!-- All Hotels Section -->
+    <section class="section-padding" id="all-hotels">
+        <div class="container">
+            <h2 class="text-center mb-5">All Hotels</h2>
+            <div class="row">
+                <?php if (empty($all_hotels)): ?>
+                    <div class="col-12 text-center">
+                        <p class="text-muted">No hotels available at the moment.</p>
+                    </div>
+                <?php else: ?>
+                    <?php foreach ($all_hotels as $hotel): ?>
+                    <div class="col-md-4 mb-4">
+                        <div class="card">
+                            <img src="<?php echo htmlspecialchars($hotel['image_url']); ?>" class="card-img-top" alt="<?php echo htmlspecialchars($hotel['name']); ?>">
+                            <div class="card-body">
+                                <h5 class="card-title"><?php echo htmlspecialchars($hotel['name']); ?></h5>
+                                <p class="card-text"><?php echo htmlspecialchars($hotel['description']); ?></p>
+                                <p class="card-text">
+                                    <i class="fas fa-map-marker-alt"></i> <?php echo htmlspecialchars($hotel['city']); ?>
+                                </p>
+                                <a href="room-list.php?hotel=<?php echo $hotel['id']; ?>" class="btn btn-custom">View Rooms</a>
+                            </div>
+                        </div>
+                    </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
+        </div>
+    </section>
+
     <!-- Room Categories Section -->
     <section class="section-padding" id="rooms">
         <div class="container">
@@ -366,7 +429,7 @@ $check_out = isset($_GET['check_out']) ? $_GET['check_out'] : date('Y-m-d 12:00'
                     <div class="room-category">
                         <h3><?php echo htmlspecialchars($category['room_type']); ?></h3>
                         <p class="price-range">
-                            From Pkr<?php echo number_format($category['min_price'], 2); ?> to Pkr<?php echo number_format($category['max_price'], 2); ?> per night
+                            From PKR <?php echo number_format($category['min_price'], 2); ?> to PKR <?php echo number_format($category['max_price'], 2); ?> per night
                         </p>
                         <a href="room-list.php?room_type=<?php echo urlencode($category['room_type']); ?>" class="btn btn-custom">View Rooms</a>
                     </div>
@@ -412,15 +475,24 @@ $check_out = isset($_GET['check_out']) ? $_GET['check_out'] : date('Y-m-d 12:00'
             <h2 class="text-center mb-5">Contact Us</h2>
             <div class="row">
                 <div class="col-md-6">
-                    <form>
+                    <form action="contact-submit.php" method="POST" class="needs-validation" novalidate>
                         <div class="mb-3">
-                            <input type="text" class="form-control" placeholder="Your Name" required>
+                            <input type="text" class="form-control" name="name" placeholder="Your Name" required>
+                            <div class="invalid-feedback">
+                                Please enter your name.
+                            </div>
                         </div>
                         <div class="mb-3">
-                            <input type="email" class="form-control" placeholder="Your Email" required>
+                            <input type="email" class="form-control" name="email" placeholder="Your Email" required>
+                            <div class="invalid-feedback">
+                                Please enter a valid email address.
+                            </div>
                         </div>
                         <div class="mb-3">
-                            <textarea class="form-control" rows="5" placeholder="Your Message" required></textarea>
+                            <textarea class="form-control" name="message" rows="5" placeholder="Your Message" required></textarea>
+                            <div class="invalid-feedback">
+                                Please enter your message.
+                            </div>
                         </div>
                         <button type="submit" class="btn btn-custom">Send Message</button>
                     </form>
@@ -464,15 +536,16 @@ $check_out = isset($_GET['check_out']) ? $_GET['check_out'] : date('Y-m-d 12:00'
             </div>
             <hr>
             <div class="text-center">
-                <p class="mb-0">&copy; <?php echo date('Y'); ?> Jhang Hotels. All rights reserved.</p>
+                <p class="mb-0">© <?php echo date('Y'); ?> Jhang Hotels. All rights reserved.</p>
             </div>
         </div>
     </footer>
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Custom JavaScript for Navbar Scroll Effect -->
+    <!-- Custom JavaScript for Navbar Scroll Effect and Form Validation -->
     <script>
+        // Navbar scroll effect
         window.addEventListener('scroll', function() {
             const navbar = document.querySelector('.navbar');
             const heroSection = document.querySelector('.hero-section');
@@ -487,17 +560,10 @@ $check_out = isset($_GET['check_out']) ? $_GET['check_out'] : date('Y-m-d 12:00'
             }
         });
 
+        // Form validation and date handling
         document.addEventListener('DOMContentLoaded', function() {
             const checkInInput = document.getElementById('check_in');
             const checkOutInput = document.getElementById('check_out');
-            
-            // Set default values to current date and time
-            const now = new Date();
-            const tomorrow = new Date(now);
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            
-            checkInInput.value = now.toISOString().slice(0, 16);
-            checkOutInput.value = tomorrow.toISOString().slice(0, 16);
             
             // Validate check-out is after check-in
             checkInInput.addEventListener('change', function() {
@@ -513,7 +579,19 @@ $check_out = isset($_GET['check_out']) ? $_GET['check_out'] : date('Y-m-d 12:00'
                     alert('Check-out time must be after check-in time');
                 }
             });
+
+            // Bootstrap form validation
+            const forms = document.querySelectorAll('.needs-validation');
+            Array.from(forms).forEach(form => {
+                form.addEventListener('submit', event => {
+                    if (!form.checkValidity()) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+                    form.classList.add('was-validated');
+                }, false);
+            });
         });
     </script>
 </body>
-</html> 
+</html>

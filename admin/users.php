@@ -7,6 +7,7 @@ requireAdmin();
 
 $error = '';
 $success = '';
+$admin_id = $_SESSION['user_id'];
 
 // Handle user deletion
 if (isset($_POST['delete_user'])) {
@@ -23,14 +24,14 @@ if (isset($_POST['delete_user'])) {
     if ($booking_count > 0) {
         $error = "Cannot delete user with existing bookings.";
     } else {
-        $sql = "DELETE FROM users WHERE id = ? AND role != 'admin'";
+        $sql = "DELETE FROM users WHERE id = ? AND role != 'admin' AND vendor_id = ?";
         $stmt = mysqli_prepare($conn, $sql);
-        mysqli_stmt_bind_param($stmt, "i", $user_id);
+        mysqli_stmt_bind_param($stmt, "ii", $user_id, $admin_id);
         
         if (mysqli_stmt_execute($stmt)) {
             $success = "User deleted successfully.";
         } else {
-            $error = "Error deleting user.";
+            $error = "Error deleting user: " . mysqli_error($conn);
         }
     }
 }
@@ -40,10 +41,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_user'])) {
     $username = trim($_POST['username']);
     $email = trim($_POST['email']);
     $password = trim($_POST['password']);
-    $role = trim($_POST['role']);
+    $first_name = trim($_POST['first_name']);
+    $last_name = trim($_POST['last_name']);
+    $phone = trim($_POST['phone']);
+    $address = trim($_POST['address']);
     
-    if (empty($username) || empty($email) || empty($password)) {
-        $error = "Required fields cannot be empty.";
+    // Validate required fields
+    if (empty($username) || empty($email) || empty($password) || empty($first_name) || empty($last_name) || empty($phone) || empty($address)) {
+        $error = "All fields are required.";
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error = "Invalid email address.";
+    } elseif (strlen($password) < 8) {
+        $error = "Password must be at least 8 characters long.";
     } else {
         // Check if username or email already exists
         $sql = "SELECT COUNT(*) as count FROM users WHERE username = ? OR email = ?";
@@ -56,38 +65,39 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_user'])) {
         if ($count > 0) {
             $error = "Username or email already exists.";
         } else {
-            $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-            $sql = "INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)";
+            $hashed_password = password_hash($password, PASSWORD_BCRYPT);
+            $role = 'user';
+            $vendor_id = $admin_id; // Assign to current admin
+            
+            $sql = "INSERT INTO users (username, email, password, role, vendor_id, first_name, last_name, phone, address) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
             $stmt = mysqli_prepare($conn, $sql);
-            mysqli_stmt_bind_param($stmt, "ssss", $username, $email, $hashed_password, $role);
+            mysqli_stmt_bind_param($stmt, "ssssissss", $username, $email, $hashed_password, $role, $vendor_id, $first_name, $last_name, $phone, $address);
             
             if (mysqli_stmt_execute($stmt)) {
                 $success = "User added successfully.";
             } else {
-                $error = "Error adding user.";
+                $error = "Error adding user: " . mysqli_error($conn);
             }
         }
     }
 }
 
-// Get all users except current admin
-$sql = "SELECT * FROM users WHERE id != ? ORDER BY created_at DESC";
+// Get all users for this admin
+$sql = "SELECT * FROM users WHERE id != ? AND role = 'user' AND vendor_id = ? ORDER BY created_at DESC";
 $stmt = mysqli_prepare($conn, $sql);
-mysqli_stmt_bind_param($stmt, "i", $_SESSION['user_id']);
+mysqli_stmt_bind_param($stmt, "ii", $admin_id, $admin_id);
 mysqli_stmt_execute($stmt);
 $users = mysqli_stmt_get_result($stmt);
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Management - Jhang Hotels</title>
-    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-    <!-- Google Fonts: Poppins -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
@@ -140,10 +150,6 @@ $users = mysqli_stmt_get_result($stmt);
             font-size: 0.8rem;
             font-weight: 500;
         }
-        .role-admin {
-            background-color: #d4a017;
-            color: white;
-        }
         .role-user {
             background-color: #28a745;
             color: white;
@@ -171,6 +177,16 @@ $users = mysqli_stmt_get_result($stmt);
         .btn-delete:hover {
             background-color: #c82333;
             transform: translateY(-2px);
+        }
+        .invalid-feedback {
+            font-size: 0.875rem;
+        }
+        .modal-dialog {
+            max-width: 500px;
+        }
+        .form-control:focus {
+            border-color: #d4a017;
+            box-shadow: 0 0 0 0.2rem rgba(212, 160, 23, 0.25);
         }
     </style>
 </head>
@@ -215,16 +231,22 @@ $users = mysqli_stmt_get_result($stmt);
                 </div>
 
                 <?php if ($error): ?>
-                    <div class="alert alert-danger"><?php echo $error; ?></div>
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <?php echo htmlspecialchars($error); ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
                 <?php endif; ?>
 
                 <?php if ($success): ?>
-                    <div class="alert alert-success"><?php echo $success; ?></div>
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <?php echo htmlspecialchars($success); ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
                 <?php endif; ?>
 
                 <!-- Users List -->
                 <div class="row">
-                    <?php while($user = mysqli_fetch_assoc($users)): ?>
+                    <?php while ($user = mysqli_fetch_assoc($users)): ?>
                         <div class="col-md-6 col-lg-4">
                             <div class="user-card">
                                 <div class="d-flex justify-content-between align-items-start mb-3">
@@ -233,25 +255,33 @@ $users = mysqli_stmt_get_result($stmt);
                                         <?php echo ucfirst($user['role']); ?>
                                     </span>
                                 </div>
-                                
                                 <p class="mb-2">
                                     <i class="fas fa-envelope"></i> 
                                     <?php echo htmlspecialchars($user['email']); ?>
                                 </p>
                                 <p class="mb-2">
+                                    <i class="fas fa-user"></i> 
+                                    <?php echo htmlspecialchars($user['first_name'] . ' ' . $user['last_name']); ?>
+                                </p>
+                                <p class="mb-2">
+                                    <i class="fas fa-phone"></i> 
+                                    <?php echo htmlspecialchars($user['phone']); ?>
+                                </p>
+                                <p class="mb-2">
+                                    <i class="fas fa-map-marker-alt"></i> 
+                                    <?php echo htmlspecialchars($user['address']); ?>
+                                </p>
+                                <p class="mb-2">
                                     <i class="fas fa-clock"></i> 
                                     Joined: <?php echo date('M d, Y', strtotime($user['created_at'])); ?>
                                 </p>
-
-                                <?php if ($user['role'] != 'admin'): ?>
-                                    <form method="POST" class="d-inline" 
-                                          onsubmit="return confirm('Are you sure you want to delete this user?');">
-                                        <input type="hidden" name="user_id" value="<?php echo $user['id']; ?>">
-                                        <button type="submit" name="delete_user" class="btn btn-delete">
-                                            <i class="fas fa-trash"></i> Delete User
-                                        </button>
-                                    </form>
-                                <?php endif; ?>
+                                <form method="POST" class="d-inline" 
+                                      onsubmit="return confirm('Are you sure you want to delete this user?');">
+                                    <input type="hidden" name="user_id" value="<?php echo $user['id']; ?>">
+                                    <button type="submit" name="delete_user" class="btn btn-delete">
+                                        <i class="fas fa-trash"></i> Delete User
+                                    </button>
+                                </form>
                             </div>
                         </div>
                     <?php endwhile; ?>
@@ -269,25 +299,55 @@ $users = mysqli_stmt_get_result($stmt);
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <form method="POST" action="">
+                    <form method="POST" action="" class="needs-validation" novalidate>
+                        <div class="mb-3">
+                            <label for="first_name" class="form-label">First Name *</label>
+                            <input type="text" class="form-control" id="first_name" name="first_name" required>
+                            <div class="invalid-feedback">
+                                Please enter a first name.
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="last_name" class="form-label">Last Name *</label>
+                            <input type="text" class="form-control" id="last_name" name="last_name" required>
+                            <div class="invalid-feedback">
+                                Please enter a last name.
+                            </div>
+                        </div>
                         <div class="mb-3">
                             <label for="username" class="form-label">Username *</label>
                             <input type="text" class="form-control" id="username" name="username" required>
+                            <div class="invalid-feedback">
+                                Please enter a username.
+                            </div>
                         </div>
                         <div class="mb-3">
                             <label for="email" class="form-label">Email *</label>
                             <input type="email" class="form-control" id="email" name="email" required>
+                            <div class="invalid-feedback">
+                                Please enter a valid email address.
+                            </div>
                         </div>
                         <div class="mb-3">
                             <label for="password" class="form-label">Password *</label>
-                            <input type="password" class="form-control" id="password" name="password" required>
+                            <input type="password" class="form-control" id="password" name="password" required minlength="8">
+                            <div class="invalid-feedback">
+                                Password must be at least 8 characters long.
+                            </div>
                         </div>
                         <div class="mb-3">
-                            <label for="role" class="form-label">Role *</label>
-                            <select class="form-select" id="role" name="role" required>
-                                <option value="user">User</option>
-                                <option value="admin">Admin</option>
-                            </select>
+                            <label for="phone" class="form-label">Phone *</label>
+                            <input type="text" class="form-control" id="phone" name="phone" required>
+                            <div class="invalid-feedback">
+                                Please enter a phone number.
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="address" class="form-label">Address *</label>
+                            <textarea class="form-control" id="address" name="address" required></textarea>
+                            <div class="invalid-feedback">
+                                Please enter an address.
+                            </div>
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -301,5 +361,22 @@ $users = mysqli_stmt_get_result($stmt);
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Bootstrap form validation
+        (function () {
+            'use strict'
+            var forms = document.querySelectorAll('.needs-validation')
+            Array.prototype.slice.call(forms)
+                .forEach(function (form) {
+                    form.addEventListener('submit', function (event) {
+                        if (!form.checkValidity()) {
+                            event.preventDefault()
+                            event.stopPropagation()
+                        }
+                        form.classList.add('was-validated')
+                    }, false)
+                })
+        })()
+    </script>
 </body>
-</html> 
+</html>

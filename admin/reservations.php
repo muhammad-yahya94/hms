@@ -6,19 +6,13 @@ require_once '../includes/session.php';
 requireAdmin();
 
 $error = '';
-$success = '';
-
-// Get filter parameters
-$user_id = isset($_GET['user_id']) ? (int)$_GET['user_id'] : null;
-$status_filter = isset($_GET['status']) ? mysqli_real_escape_string($conn, $_GET['status']) : '';
-$date_from_filter = isset($_GET['date_from']) ? mysqli_real_escape_string($conn, $_GET['date_from']) : '';
-$date_to_filter = isset($_GET['date_to']) ? mysqli_real_escape_string($conn, $_GET['date_to']) : '';
+$success = '';    
 
 // Add required columns if they don't exist
 $required_columns = [
-    'status' => "ALTER TABLE bookings ADD COLUMN status VARCHAR(20) DEFAULT 'pending'",
-    'check_in' => "ALTER TABLE bookings ADD COLUMN check_in DATETIME",
-    'check_out' => "ALTER TABLE bookings ADD COLUMN check_out DATETIME",
+    'booking_status' => "ALTER TABLE bookings ADD COLUMN booking_status ENUM('pending','confirmed','cancelled') DEFAULT 'pending'",
+    'check_in_date' => "ALTER TABLE bookings ADD COLUMN check_in_date DATETIME",
+    'check_out_date' => "ALTER TABLE bookings ADD COLUMN check_out_date DATETIME",
     'total_price' => "ALTER TABLE bookings ADD COLUMN total_price DECIMAL(10,2) DEFAULT 0.00"
 ];
 
@@ -38,41 +32,63 @@ foreach ($required_columns as $column => $sql) {
     }
 }
 
+// Get filter parameters
+$user_id = isset($_GET['user_id']) ? (int)$_GET['user_id'] : null;
+$status_filter = isset($_GET['status']) ? $_GET['status'] : '';
+$date_from_filter = isset($_GET['date_from']) ? $_GET['date_from'] : '';
+$date_to_filter = isset($_GET['date_to']) ? $_GET['date_to'] : '';
+
 // Handle booking status update
 if (isset($_POST['update_status'])) {
     $booking_id = (int)$_POST['booking_id'];
     $status = $_POST['status'];
     
-    // Update booking status
-    $sql = "UPDATE bookings SET booking_status = ? WHERE id = ?";
+    // Verify that the booking belongs to the admin's hotel
+    $sql = "SELECT b.id FROM bookings b 
+            JOIN hotels h ON b.hotel_id = h.id 
+            WHERE b.id = ? AND h.vendor_id = ?";
     $stmt = mysqli_prepare($conn, $sql);
-    mysqli_stmt_bind_param($stmt, "si", $status, $booking_id);
+    mysqli_stmt_bind_param($stmt, "ii", $booking_id, $_SESSION['user_id']);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
     
-    if (mysqli_stmt_execute($stmt)) {
-        // If booking is confirmed, update room status
-        if ($status === 'confirmed') {
-            $sql = "UPDATE rooms r 
-                    JOIN bookings b ON r.id = b.room_id 
-                    SET r.status = 'booked' 
-                    WHERE b.id = ?";
-            $stmt = mysqli_prepare($conn, $sql);
-            mysqli_stmt_bind_param($stmt, "i", $booking_id);
-            mysqli_stmt_execute($stmt);
-        }
-        // If booking is cancelled, make room available again
-        elseif ($status === 'cancelled') {
-            $sql = "UPDATE rooms r 
-                    JOIN bookings b ON r.id = b.room_id 
-                    SET r.status = 'available' 
-                    WHERE b.id = ?";
-            $stmt = mysqli_prepare($conn, $sql);
-            mysqli_stmt_bind_param($stmt, "i", $booking_id);
-            mysqli_stmt_execute($stmt);
-        }
-        $success = "Booking status updated successfully.";
+    if (mysqli_num_rows($result) == 0) {
+        $error = "Booking not found or you do not have permission to update it.";
     } else {
-        $error = "Error updating booking status.";
+        // Update booking status
+        $sql = "UPDATE bookings SET booking_status = ? WHERE id = ?";
+        $stmt = mysqli_prepare($conn, $sql);
+        mysqli_stmt_bind_param($stmt, "si", $status, $booking_id);
+        
+        if (mysqli_stmt_execute($stmt)) {
+            // If booking is confirmed, update room status
+            if ($status === 'confirmed') {
+                $sql = "UPDATE rooms r 
+                        JOIN bookings b ON r.id = b.room_id 
+                        JOIN hotels h ON b.hotel_id = h.id
+                        SET r.status = 'booked' 
+                        WHERE b.id = ? AND h.vendor_id = ?";
+                $stmt = mysqli_prepare($conn, $sql);
+                mysqli_stmt_bind_param($stmt, "ii", $booking_id, $_SESSION['user_id']);
+                mysqli_stmt_execute($stmt);
+            }
+            // If booking is cancelled, make room available again
+            elseif ($status === 'cancelled') {
+                $sql = "UPDATE rooms r 
+                        JOIN bookings b ON r.id = b.room_id 
+                        JOIN hotels h ON b.hotel_id = h.id
+                        SET r.status = 'available' 
+                        WHERE b.id = ? AND h.vendor_id = ?";
+                $stmt = mysqli_prepare($conn, $sql);
+                mysqli_stmt_bind_param($stmt, "ii", $booking_id, $_SESSION['user_id']);
+                mysqli_stmt_execute($stmt);
+            }
+            $success = "Booking status updated successfully.";
+        } else {
+            $error = "Error updating booking status: " . mysqli_error($conn);
+        }
     }
+    mysqli_stmt_close($stmt);
 }
 
 // Handle booking date update
@@ -88,22 +104,19 @@ if (isset($_POST['update_dates'])) {
     if ($check_out_date <= $check_in_date) {
         $error = "Check-out date must be after check-in date.";
     } else {
-        // Get room_id and price_per_night for the booking
-        $sql = "SELECT b.room_id, r.price_per_night 
-                FROM bookings b 
-                JOIN rooms r ON b.room_id = r.id 
-                WHERE b.id = ?";
+        // Verify that the booking belongs to the admin's hotel
+        $sql = "SELECT b.room_id FROM bookings b 
+                JOIN hotels h ON b.hotel_id = h.id 
+                WHERE b.id = ? AND h.vendor_id = ?";
         $stmt = mysqli_prepare($conn, $sql);
-        mysqli_stmt_bind_param($stmt, "i", $booking_id);
+        mysqli_stmt_bind_param($stmt, "ii", $booking_id, $_SESSION['user_id']);
         mysqli_stmt_execute($stmt);
         $result = mysqli_stmt_get_result($stmt);
-        $booking_info = mysqli_fetch_assoc($result);
         
-        if (!$booking_info) {
-            $error = "Booking or room not found.";
+        if (mysqli_num_rows($result) == 0) {
+            $error = "Booking not found or you do not have permission to update it.";
         } else {
-            $room_id = $booking_info['room_id'];
-            $price_per_night = $booking_info['price_per_night'];
+            $room_id = mysqli_fetch_assoc($result)['room_id'];
             
             // Check for conflicts with other non-cancelled bookings
             $sql = "SELECT id FROM bookings 
@@ -123,37 +136,43 @@ if (isset($_POST['update_dates'])) {
             if (mysqli_stmt_num_rows($stmt) > 0) {
                 $error = "The new dates conflict with another booking for this room.";
             } else {
-                // Calculate new total price
-                $nights = $check_in_date->diff($check_out_date)->days;
-                $new_total_price = $price_per_night * $nights;
+                // Calculate new total price based on hours with fixed hourly rate of 200 PKR
+                $interval = $check_in_date->diff($check_out_date);
+                $total_hours = ($interval->days * 24) + $interval->h + ($interval->i / 60);
+                $total_hours = max(1, ceil($total_hours)); // Minimum 1 hour, round up
+                $hourly_rate = 200; // Fixed hourly rate
+                $new_total_price = round($hourly_rate * $total_hours, 2);
                 
                 // Update booking
                 $sql = "UPDATE bookings 
                         SET check_in_date = ?, check_out_date = ?, total_price = ? 
-                        WHERE id = ?";
+                        WHERE id = ? AND EXISTS (
+                            SELECT 1 FROM hotels h WHERE h.id = bookings.hotel_id AND h.vendor_id = ?
+                        )";
                 $stmt = mysqli_prepare($conn, $sql);
-                mysqli_stmt_bind_param($stmt, "ssdi", $new_check_in, $new_check_out, $new_total_price, $booking_id);
+                mysqli_stmt_bind_param($stmt, "ssdii", $new_check_in, $new_check_out, $new_total_price, $booking_id, $_SESSION['user_id']);
                 
                 if (mysqli_stmt_execute($stmt)) {
-                    $success = "Booking dates and price updated successfully.";
+                    $success = "Booking dates and price updated successfully. New total: PKR " . number_format($new_total_price, 2) . " for $total_hours hours.";
                 } else {
-                    $error = "Error updating booking dates.";
+                    $error = "Error updating booking details: " . mysqli_error($conn);
                 }
             }
         }
+        mysqli_stmt_close($stmt);
     }
 }
 
 // Build the SQL query for bookings
-$sql = "SELECT b.*, h.name as hotel_name, r.room_type, u.username, u.email
+$sql = "SELECT b.*, h.name AS hotel_name, r.room_type, u.username, u.email
         FROM bookings b 
         JOIN hotels h ON b.hotel_id = h.id 
         JOIN rooms r ON b.room_id = r.id 
         JOIN users u ON b.user_id = u.id 
-        WHERE 1=1";
+        WHERE h.vendor_id = ?";
 
-$params = array();
-$types = "";
+$params = array($_SESSION['user_id']);
+$types = "i";
 
 if ($user_id !== null) {
     $sql .= " AND b.user_id = ?";
@@ -167,6 +186,7 @@ if ($user_id !== null) {
     $user_result = mysqli_stmt_get_result($user_stmt);
     $user_row = mysqli_fetch_assoc($user_result);
     $username_filter = $user_row ? " for " . htmlspecialchars($user_row['username']) : '';
+    mysqli_stmt_close($user_stmt);
 } else {
     $username_filter = '';
 }
@@ -323,6 +343,23 @@ $bookings = mysqli_stmt_get_result($stmt);
         .form-control {
             border: 1px solid #d4a017;
         }
+        .form-control.is-invalid {
+            border-color: #dc3545;
+        }
+        .invalid-feedback {
+            display: none;
+            color: #dc3545;
+            font-size: 0.875rem;
+        }
+        .was-validated .form-control:invalid ~ .invalid-feedback,
+        .form-control.is-invalid ~ .invalid-feedback {
+            display: block;
+        }
+        #price-preview {
+            margin-top: 10px;
+            font-weight: 500;
+            color: #d4a017;
+        }
     </style>
 </head>
 <body>
@@ -361,11 +398,17 @@ $bookings = mysqli_stmt_get_result($stmt);
                 <h2 class="mb-4">Reservation Management<?php echo $username_filter; ?></h2>
 
                 <?php if ($error): ?>
-                    <div class="alert alert-danger"><?php echo $error; ?></div>
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <?php echo htmlspecialchars($error); ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
                 <?php endif; ?>
 
                 <?php if ($success): ?>
-                    <div class="alert alert-success"><?php echo $success; ?></div>
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <?php echo htmlspecialchars($success); ?>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
                 <?php endif; ?>
 
                 <!-- Filter Section -->
@@ -383,12 +426,12 @@ $bookings = mysqli_stmt_get_result($stmt);
                         <div class="col-md-3">
                             <label for="date_from" class="form-label">Date From</label>
                             <input type="date" class="form-control" id="date_from" name="date_from" 
-                                   value="<?php echo isset($_GET['date_from']) ? $_GET['date_from'] : ''; ?>">
+                                   value="<?php echo isset($_GET['date_from']) ? htmlspecialchars($_GET['date_from']) : ''; ?>">
                         </div>
                         <div class="col-md-3">
                             <label for="date_to" class="form-label">Date To</label>
                             <input type="date" class="form-control" id="date_to" name="date_to"
-                                   value="<?php echo isset($_GET['date_to']) ? $_GET['date_to'] : ''; ?>">
+                                   value="<?php echo isset($_GET['date_to']) ? htmlspecialchars($_GET['date_to']) : ''; ?>">
                         </div>
                         <div class="col-md-3 d-flex align-items-end">
                             <button type="submit" class="btn btn-custom me-2">
@@ -407,7 +450,7 @@ $bookings = mysqli_stmt_get_result($stmt);
                         <div class="col-md-6 col-lg-4">
                             <div class="booking-card">
                                 <div class="d-flex justify-content-between align-items-start mb-3">
-                                    <h5 class="mb-0">Booking #<?php echo $booking['id']; ?></h5>
+                                    <h5 class="mb-0">Room Number <?php echo htmlspecialchars($booking['room_id']); ?></h5>
                                     <span class="status-badge status-<?php echo strtolower($booking['booking_status']); ?>">
                                         <?php echo ucfirst($booking['booking_status']); ?>
                                     </span>
@@ -478,18 +521,27 @@ $bookings = mysqli_stmt_get_result($stmt);
                                             <h5 class="modal-title" id="editDatesModalLabel<?php echo $booking['id']; ?>">Edit Booking Dates #<?php echo $booking['id']; ?></h5>
                                             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                                         </div>
-                                        <form method="POST" action="">
+                                        <form method="POST" action="" class="needs-validation" novalidate>
                                             <div class="modal-body">
                                                 <input type="hidden" name="booking_id" value="<?php echo $booking['id']; ?>">
                                                 <div class="mb-3">
                                                     <label for="check_in_date<?php echo $booking['id']; ?>" class="form-label">Check-in Date & Time</label>
                                                     <input type="datetime-local" class="form-control" id="check_in_date<?php echo $booking['id']; ?>" name="check_in_date" 
                                                            value="<?php echo date('Y-m-d\TH:i', strtotime($booking['check_in_date'])); ?>" required>
+                                                    <div class="invalid-feedback">
+                                                        Please select a valid check-in date and time.
+                                                    </div>
                                                 </div>
                                                 <div class="mb-3">
                                                     <label for="check_out_date<?php echo $booking['id']; ?>" class="form-label">Check-out Date & Time</label>
                                                     <input type="datetime-local" class="form-control" id="check_out_date<?php echo $booking['id']; ?>" name="check_out_date" 
                                                            value="<?php echo date('Y-m-d\TH:i', strtotime($booking['check_out_date'])); ?>" required>
+                                                    <div class="invalid-feedback">
+                                                        Please select a valid check-out date and time.
+                                                    </div>
+                                                </div>
+                                                <div id="price-preview<?php echo $booking['id']; ?>" class="text-muted">
+                                                    Estimated price will be shown here.
                                                 </div>
                                             </div>
                                             <div class="modal-footer">
@@ -510,22 +562,69 @@ $bookings = mysqli_stmt_get_result($stmt);
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Client-side validation for date inputs
+        // Client-side validation and price preview
         document.addEventListener('DOMContentLoaded', function() {
-            document.querySelectorAll('form').forEach(form => {
-                form.addEventListener('submit', function(event) {
-                    if (form.querySelector('[name="update_dates"]')) {
-                        const checkIn = new Date(form.querySelector('[name="check_in_date"]').value);
-                        const checkOut = new Date(form.querySelector('[name="check_out_date"]').value);
-                        if (checkOut <= checkIn) {
-                            event.preventDefault();
-                            alert('Check-out date must be after check-in date.');
+            document.querySelectorAll('form.needs-validation').forEach(form => {
+                const checkInInput = form.querySelector('[name="check_in_date"]');
+                const checkOutInput = form.querySelector('[name="check_out_date"]');
+                const pricePreview = form.querySelector('[id^="price-preview"]');
+
+                function updatePricePreview() {
+                    const checkIn = new Date(checkInInput.value);
+                    const checkOut = new Date(checkOutInput.value);
+
+                    if (checkOut > checkIn && !isNaN(checkIn.getTime()) && !isNaN(checkOut.getTime())) {
+                        const diffMs = checkOut - checkIn;
+                        const totalSeconds = Math.floor(diffMs / 1000);
+                        const totalMinutes = Math.floor(totalSeconds / 60);
+                        const totalHours = Math.floor(totalMinutes / 60);
+                        const remainingMinutes = totalMinutes % 60;
+                        const remainingSeconds = totalSeconds % 60;
+
+                        let hours = totalHours;
+                        if (remainingMinutes > 0 || remainingSeconds > 0) {
+                            hours++; // Round up like in PHP
                         }
+
+                        const hourlyRate = 200; // Fixed hourly rate of 200 PKR
+                        const totalPrice = (hourlyRate * hours).toFixed(2);
+
+                        pricePreview.textContent = `Estimated price: PKR ${totalPrice} for ${hours} hour${hours > 1 ? 's' : ''}`;
+                        pricePreview.style.color = '#d4a017';
+                    } else {
+                        pricePreview.textContent = 'Please select valid dates.';
+                        pricePreview.style.color = '#dc3545';
                     }
-                });
+                }
+
+                checkInInput.addEventListener('change', updatePricePreview);
+                checkOutInput.addEventListener('change', updatePricePreview);
+
+                form.addEventListener('submit', function(event) {
+                    checkInInput.classList.remove('is-invalid');
+                    checkOutInput.classList.remove('is-invalid');
+
+                    const checkIn = new Date(checkInInput.value);
+                    const checkOut = new Date(checkOutInput.value);
+
+                    if (!form.checkValidity()) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    } else if (isNaN(checkIn.getTime()) || isNaN(checkOut.getTime())) {
+                        event.preventDefault();
+                        alert('Please select valid dates.');
+                        checkInInput.classList.add('is-invalid');
+                        checkOutInput.classList.add('is-invalid');
+                    } else if (checkOut <= checkIn) {
+                        event.preventDefault();
+                        alert('Check-out date must be after check-in date.');
+                        checkOutInput.classList.add('is-invalid');
+                    }
+
+                    form.classList.add('was-validated');
+                }, false);
             });
         });
     </script>
 </body>
 </html>
-```
