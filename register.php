@@ -43,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             $stmt = mysqli_prepare($conn, $sql);
             mysqli_stmt_bind_param($stmt, "s", $email);
             mysqli_stmt_execute($stmt);
-            mysqli_stmt_store_result($stmt);
+            mysqli_stmt_store_result($stmt);   
             
             if (mysqli_stmt_num_rows($stmt) > 0) {
                 $error = "Email already exists.";
@@ -57,7 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 
                 if (mysqli_stmt_execute($stmt)) {
                     // Redirect to index.php on successful registration
-                    header('Location: index.php');
+                    header('Location: login.php');
                     exit();
                 } else {
                     $error = "Something went wrong. Please try again later.";
