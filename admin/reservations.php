@@ -75,7 +75,76 @@ if (isset($_POST['update_status'])) {
     }
 }
 
-// Build the SQL query
+// Handle booking date update
+if (isset($_POST['update_dates'])) {
+    $booking_id = (int)$_POST['booking_id'];
+    $new_check_in = $_POST['check_in_date'];
+    $new_check_out = $_POST['check_out_date'];
+    
+    // Validate dates
+    $check_in_date = new DateTime($new_check_in);
+    $check_out_date = new DateTime($new_check_out);
+    
+    if ($check_out_date <= $check_in_date) {
+        $error = "Check-out date must be after check-in date.";
+    } else {
+        // Get room_id and price_per_night for the booking
+        $sql = "SELECT b.room_id, r.price_per_night 
+                FROM bookings b 
+                JOIN rooms r ON b.room_id = r.id 
+                WHERE b.id = ?";
+        $stmt = mysqli_prepare($conn, $sql);
+        mysqli_stmt_bind_param($stmt, "i", $booking_id);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        $booking_info = mysqli_fetch_assoc($result);
+        
+        if (!$booking_info) {
+            $error = "Booking or room not found.";
+        } else {
+            $room_id = $booking_info['room_id'];
+            $price_per_night = $booking_info['price_per_night'];
+            
+            // Check for conflicts with other non-cancelled bookings
+            $sql = "SELECT id FROM bookings 
+                    WHERE room_id = ? 
+                    AND booking_status IN ('pending', 'confirmed') 
+                    AND id != ? 
+                    AND (
+                        (check_in_date <= ? AND check_out_date >= ?) OR
+                        (check_in_date <= ? AND check_out_date >= ?) OR
+                        (check_in_date >= ? AND check_out_date <= ?)
+                    )";
+            $stmt = mysqli_prepare($conn, $sql);
+            mysqli_stmt_bind_param($stmt, "iissssss", $room_id, $booking_id, $new_check_out, $new_check_in, $new_check_in, $new_check_in, $new_check_in, $new_check_out);
+            mysqli_stmt_execute($stmt);
+            mysqli_stmt_store_result($stmt);
+            
+            if (mysqli_stmt_num_rows($stmt) > 0) {
+                $error = "The new dates conflict with another booking for this room.";
+            } else {
+                // Calculate new total price
+                $nights = $check_in_date->diff($check_out_date)->days;
+                $new_total_price = $price_per_night * $nights;
+                
+                // Update booking
+                $sql = "UPDATE bookings 
+                        SET check_in_date = ?, check_out_date = ?, total_price = ? 
+                        WHERE id = ?";
+                $stmt = mysqli_prepare($conn, $sql);
+                mysqli_stmt_bind_param($stmt, "ssdi", $new_check_in, $new_check_out, $new_total_price, $booking_id);
+                
+                if (mysqli_stmt_execute($stmt)) {
+                    $success = "Booking dates and price updated successfully.";
+                } else {
+                    $error = "Error updating booking dates.";
+                }
+            }
+        }
+    }
+}
+
+// Build the SQL query for bookings
 $sql = "SELECT b.*, h.name as hotel_name, r.room_type, u.username, u.email
         FROM bookings b 
         JOIN hotels h ON b.hotel_id = h.id 
@@ -220,12 +289,39 @@ $bookings = mysqli_stmt_get_result($stmt);
             background-color: #b38b12;
             transform: translateY(-2px);
         }
+        .btn-edit {
+            background-color: #6c757d;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+        .btn-edit:hover {
+            background-color: #5a6268;
+            transform: translateY(-2px);
+        }
         .filter-section {
             background: white;
             border-radius: 10px;
             padding: 20px;
             margin-bottom: 20px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .modal-content {
+            border-radius: 10px;
+        }
+        .modal-header {
+            background-color: #d4a017;
+            color: white;
+            border-top-left-radius: 10px;
+            border-top-right-radius: 10px;
+        }
+        .modal-title {
+            font-weight: 600;
+        }
+        .form-control {
+            border: 1px solid #d4a017;
         }
     </style>
 </head>
@@ -351,8 +447,8 @@ $bookings = mysqli_stmt_get_result($stmt);
                                     Total: PKR <?php echo number_format($booking['total_price'], 2); ?>
                                 </p>
                                 
-                                <?php if ($booking['booking_status'] === 'pending'): ?>
-                                    <div class="d-flex gap-2">
+                                <div class="d-flex gap-2 flex-wrap">
+                                    <?php if ($booking['booking_status'] === 'pending'): ?>
                                         <form method="POST" action="" class="d-inline">
                                             <input type="hidden" name="booking_id" value="<?php echo $booking['id']; ?>">
                                             <input type="hidden" name="status" value="confirmed">
@@ -367,8 +463,42 @@ $bookings = mysqli_stmt_get_result($stmt);
                                                 <i class="fas fa-times"></i> Cancel
                                             </button>
                                         </form>
+                                    <?php endif; ?>
+                                    <button type="button" class="btn btn-edit" data-bs-toggle="modal" data-bs-target="#editDatesModal<?php echo $booking['id']; ?>">
+                                        <i class="fas fa-edit"></i> Edit Dates
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Edit Dates Modal -->
+                            <div class="modal fade" id="editDatesModal<?php echo $booking['id']; ?>" tabindex="-1" aria-labelledby="editDatesModalLabel<?php echo $booking['id']; ?>" aria-hidden="true">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title" id="editDatesModalLabel<?php echo $booking['id']; ?>">Edit Booking Dates #<?php echo $booking['id']; ?></h5>
+                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <form method="POST" action="">
+                                            <div class="modal-body">
+                                                <input type="hidden" name="booking_id" value="<?php echo $booking['id']; ?>">
+                                                <div class="mb-3">
+                                                    <label for="check_in_date<?php echo $booking['id']; ?>" class="form-label">Check-in Date & Time</label>
+                                                    <input type="datetime-local" class="form-control" id="check_in_date<?php echo $booking['id']; ?>" name="check_in_date" 
+                                                           value="<?php echo date('Y-m-d\TH:i', strtotime($booking['check_in_date'])); ?>" required>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label for="check_out_date<?php echo $booking['id']; ?>" class="form-label">Check-out Date & Time</label>
+                                                    <input type="datetime-local" class="form-control" id="check_out_date<?php echo $booking['id']; ?>" name="check_out_date" 
+                                                           value="<?php echo date('Y-m-d\TH:i', strtotime($booking['check_out_date'])); ?>" required>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                                <button type="submit" name="update_dates" class="btn btn-custom">Save Changes</button>
+                                            </div>
+                                        </form>
                                     </div>
-                                <?php endif; ?>
+                                </div>
                             </div>
                         </div>
                     <?php endwhile; ?>
@@ -379,5 +509,23 @@ $bookings = mysqli_stmt_get_result($stmt);
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Client-side validation for date inputs
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('form').forEach(form => {
+                form.addEventListener('submit', function(event) {
+                    if (form.querySelector('[name="update_dates"]')) {
+                        const checkIn = new Date(form.querySelector('[name="check_in_date"]').value);
+                        const checkOut = new Date(form.querySelector('[name="check_out_date"]').value);
+                        if (checkOut <= checkIn) {
+                            event.preventDefault();
+                            alert('Check-out date must be after check-in date.');
+                        }
+                    }
+                });
+            });
+        });
+    </script>
 </body>
-</html> 
+</html>
+```

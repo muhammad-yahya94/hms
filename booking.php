@@ -20,28 +20,38 @@ if (!$room_id || !$check_in || !$check_out || !$adults) {
     exit();
 }
 
-// Get room details
-$sql = "SELECT * FROM rooms WHERE id = ?";
-$stmt = mysqli_prepare($conn, $sql);
-mysqli_stmt_bind_param($stmt, "i", $room_id);
-mysqli_stmt_execute($stmt);
-$result = mysqli_stmt_get_result($stmt);
-$room = mysqli_fetch_assoc($result);
-
-if (!$room) {
-    header("Location: room-list.php");
-    exit();
-}
-
-// Calculate total nights and price
+// Validate check-out is after check-in
 $check_in_date = new DateTime($check_in);
 $check_out_date = new DateTime($check_out);
-$nights = $check_in_date->diff($check_out_date)->days;
-$total_price = $room['price_per_night'] * $nights;
+if ($check_out_date <= $check_in_date) {
+    $error = "Check-out date and time must be after check-in date and time.";
+    $room = null;
+} else {
+    // Get room details
+    $sql = "SELECT * FROM rooms WHERE id = ?";
+    $stmt = mysqli_prepare($conn, $sql);
+    mysqli_stmt_bind_param($stmt, "i", $room_id);
+    mysqli_stmt_execute($stmt);
+    $result = mysqli_stmt_get_result($stmt);
+    $room = mysqli_fetch_assoc($result);
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    if (!$room) {
+        header("Location: room-list.php");
+        exit();
+    }
+
+    // Calculate total hours and price
+    $interval = $check_in_date->diff($check_out_date);
+    $hours = ($interval->days * 24) + $interval->h;
+    if ($interval->i > 0 || $interval->s > 0) {
+        $hours++; // Round up partial hours
+    }
+    $total_price = $room['price_per_night'] * $hours;
+}
+
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && !$error) {
     // Check if room is still available
-    $sql = "SELECT id FROM bookings WHERE room_id = ? AND 
+    $sql = "SELECT id FROM bookings WHERE room_id = ? AND booking_status IN ('pending', 'confirmed') AND 
             ((check_in_date <= ? AND check_out_date >= ?) OR 
              (check_in_date <= ? AND check_out_date >= ?) OR 
              (check_in_date >= ? AND check_out_date <= ?))";
@@ -51,7 +61,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     mysqli_stmt_store_result($stmt);
     
     if (mysqli_stmt_num_rows($stmt) > 0) {
-        $error = "Sorry, this room is no longer available for the selected dates.";
+        $error = "Sorry, this room is no longer available for the selected dates and times.";
     } else {
         // Create booking
         $user_id = $_SESSION['user_id'];
@@ -75,7 +85,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Book Room - Jhang Hotels</title>
     <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <!-- Google Fonts: Poppins -->
@@ -128,6 +138,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         .alert {
             margin-bottom: 20px;
         }
+        .room-icons i {
+            margin-right: 10px;
+            color: #d4a017;
+            font-size: 1.2rem;
+        }
     </style>
 </head>
 <body>
@@ -143,89 +158,91 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                 <div class="alert alert-success"><?php echo $success; ?></div>
             <?php endif; ?>
             
-            <div class="row">
-                <div class="col-md-6">
-                    <img src="<?php echo htmlspecialchars($room['image_url']); ?>" class="room-image" alt="<?php echo htmlspecialchars($room['room_type']); ?>" onerror="this.src='https://images.unsplash.com/photo-1618773928121-c32242e63f39';">
-                    <div class="booking-details">
-                        <h4><?php echo htmlspecialchars($room['room_type']); ?></h4>
-                        <p><?php echo htmlspecialchars($room['description']); ?></p>
-                        <?php if (!empty($room['size_sqft'])): ?>
-                            <p><strong>Room Size:</strong> <?php echo htmlspecialchars($room['size_sqft']); ?> sq ft</p>
-                        <?php endif; ?>
-                        <?php if (!empty($room['bed_type'])): ?>
-                            <p><strong>Bed Type:</strong> <?php echo htmlspecialchars($room['bed_type']); ?></p>
-                        <?php endif; ?>
-                        <p><strong>Capacity:</strong> <?php echo htmlspecialchars($room['capacity']); ?> Guests</p>
-                        <div class="room-icons">
-                            <?php
-                            $amenities = explode(',', $room['amenities']);
-                            foreach($amenities as $amenity) {
-                                $icon = '';
-                                switch(trim($amenity)) {
-                                    case 'WiFi':
-                                        $icon = 'fa-wifi';
-                                        break;
-                                    case 'Smart TV':
-                                        $icon = 'fa-tv';
-                                        break;
-                                    case 'Minibar':
-                                        $icon = 'fa-wine-glass';
-                                        break;
-                                    case 'Living Area':
-                                        $icon = 'fa-couch';
-                                        break;
-                                    case 'Work Desk':
-                                        $icon = 'fa-briefcase';
-                                        break;
-                                    case 'Butler Service':
-                                        $icon = 'fa-concierge-bell';
-                                        break;
-                                    case 'Private Bathroom':
-                                        $icon = 'fa-bath';
-                                        break;
+            <?php if ($room && !$error): ?>
+                <div class="row">
+                    <div class="col-md-6">
+                        <img src="<?php echo htmlspecialchars($room['image_url']); ?>" class="room-image" alt="<?php echo htmlspecialchars($room['room_type']); ?>" onerror="this.src='https://images.unsplash.com/photo-1618773928121-c32242e63f39';">
+                        <div class="booking-details">
+                            <h4><?php echo htmlspecialchars($room['room_type']); ?></h4>
+                            <p><?php echo htmlspecialchars($room['description']); ?></p>
+                            <?php if (!empty($room['size_sqft'])): ?>
+                                <p><strong>Room Size:</strong> <?php echo htmlspecialchars($room['size_sqft']); ?> sq ft</p>
+                            <?php endif; ?>
+                            <?php if (!empty($room['bed_type'])): ?>
+                                <p><strong>Bed Type:</strong> <?php echo htmlspecialchars($room['bed_type']); ?></p>
+                            <?php endif; ?>
+                            <p><strong>Capacity:</strong> <?php echo htmlspecialchars($room['capacity']); ?> Guests</p>
+                            <div class="room-icons">
+                                <?php
+                                $amenities = explode(',', $room['amenities']);
+                                foreach($amenities as $amenity) {
+                                    $icon = '';
+                                    switch(trim($amenity)) {
+                                        case 'WiFi':
+                                            $icon = 'fa-wifi';
+                                            break;
+                                        case 'Smart TV':
+                                            $icon = 'fa-tv';
+                                            break;
+                                        case 'Minibar':
+                                            $icon = 'fa-wine-glass';
+                                            break;
+                                        case 'Living Area':
+                                            $icon = 'fa-couch';
+                                            break;
+                                        case 'Work Desk':
+                                            $icon = 'fa-briefcase';
+                                            break;
+                                        case 'Butler Service':
+                                            $icon = 'fa-concierge-bell';
+                                            break;
+                                        case 'Private Bathroom':
+                                            $icon = 'fa-bath';
+                                            break;
+                                    }
+                                    if($icon) {
+                                        echo "<i class='fas $icon' title='" . htmlspecialchars(trim($amenity)) . "'></i>";
+                                    }
                                 }
-                                if($icon) {
-                                    echo "<i class='fas $icon' title='" . htmlspecialchars(trim($amenity)) . "'></i> ";
-                                }
-                            }
-                            ?>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="booking-details">
-                        <h4>Booking Details</h4>
-                        <p><strong>Check-in:</strong> <?php echo date('F j, Y', strtotime($check_in)); ?></p>
-                        <p><strong>Check-out:</strong> <?php echo date('F j, Y', strtotime($check_out)); ?></p>
-                        <p><strong>Number of Nights:</strong> <?php echo $nights; ?></p>
-                        <p><strong>Guests:</strong> <?php echo $adults; ?> Adult<?php echo $adults > 1 ? 's' : ''; ?><?php echo $children > 0 ? ', ' . $children . ' Child' . ($children > 1 ? 'ren' : '') : ''; ?></p>
-                    </div>
-                    
-                    <div class="price-details">
-                        <h4>Price Details</h4>
-                        <p><strong>Price per Night:</strong> PKR <?php echo number_format($room['price_per_night'], 2); ?></p>
-                        <p><strong>Number of Nights:</strong> <?php echo $nights; ?></p>
-                        <hr>
-                        <h5><strong>Total Price:</strong> PKR <?php echo number_format($total_price, 2); ?></h5>
-                    </div>
-                    
-                    <?php if (!$success): ?>
-                        <form method="POST" action="">
-                            <div class="text-center">
-                                <button type="submit" class="btn btn-book">Confirm Booking</button>
+                                ?>
                             </div>
-                        </form>
-                    <?php else: ?>
-                        <div class="text-center">
-                            <a href="room-list.php" class="btn btn-book">Back to Rooms</a>
                         </div>
-                    <?php endif; ?>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="booking-details">
+                            <h4>Booking Details</h4>
+                            <p><strong>Check-in:</strong> <?php echo date('F j, Y h:i A', strtotime($check_in)); ?></p>
+                            <p><strong>Check-out:</strong> <?php echo date('F j, Y h:i A', strtotime($check_out)); ?></p>
+                            <p><strong>Number of Hours:</strong> <?php echo $hours; ?></p>
+                            <p><strong>Guests:</strong> <?php echo $adults; ?> Adult<?php echo $adults > 1 ? 's' : ''; ?><?php echo $children > 0 ? ', ' . $children . ' Child' . ($children > 1 ? 'ren' : '') : ''; ?></p>
+                        </div>
+                        
+                        <div class="price-details">
+                            <h4>Price Details</h4>
+                            <p><strong>Price per Hour:</strong> PKR <?php echo number_format($room['price_per_night'], 2); ?></p>
+                            <p><strong>Number of Hours:</strong> <?php echo $hours; ?></p>
+                            <hr>
+                            <h5><strong>Total Price:</strong> PKR <?php echo number_format($total_price, 2); ?></h5>
+                        </div>
+                        
+                        <?php if (!$success): ?>
+                            <form method="POST" action="">
+                                <div class="text-center">
+                                    <button type="submit" class="btn btn-book">Confirm Booking</button>
+                                </div>
+                            </form>
+                        <?php else: ?>
+                            <div class="text-center">
+                                <a href="room-list.php" class="btn btn-book">Back to Rooms</a>
+                            </div>
+                        <?php endif; ?>
+                    </div>
                 </div>
-            </div>
+            <?php endif; ?>
         </div>
     </div>
 
     <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
-</html> 
+</html>

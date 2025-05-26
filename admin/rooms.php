@@ -109,7 +109,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (mysqli_stmt_execute($stmt)) {
                 $success = isset($_POST['add_room']) ? "Room added successfully!" : "Room updated successfully!";
             } else {
-                $error = "Error: " . mysqli_error($conn);
+                $error = "Error updating room: " . mysqli_error($conn);
             }
         }
     }
@@ -290,13 +290,13 @@ $rooms = mysqli_query($conn, $sql);
                     <?php while($room = mysqli_fetch_assoc($rooms)): ?>
                         <div class="col-md-6 col-lg-4">
                             <div class="room-card">
-                                <?php if (!empty($room['image'])): ?>
-                                    <img src="../<?php echo htmlspecialchars($room['image']); ?>" alt="Room Image" class="room-image">
+                                <?php if (!empty($room['image_url'])): ?>
+                                    <img src="../<?php echo htmlspecialchars($room['image_url']); ?>" alt="Room Image" class="room-image">
                                 <?php endif; ?>
                                 <div class="room-details">
                                     <h5><?php echo htmlspecialchars($room['hotel_name']); ?></h5>
                                     <p class="room-type"><?php echo ucfirst($room['room_type']); ?></p>
-                                    <p class="price">PKR <?php echo number_format($room['price_per_night'], 2); ?> per night</p>
+                                    <p class="price">PKR <?php echo number_format($room['price_per_night'], 2); ?> per hour</p>
                                     <p class="capacity">Capacity: <?php echo $room['capacity']; ?> guests</p>
                                     <p class="amenities"><?php echo htmlspecialchars($room['amenities']); ?></p>
                                     <div class="room-actions">
@@ -304,13 +304,13 @@ $rooms = mysqli_query($conn, $sql);
                                             <i class="fas fa-edit"></i> Edit
                                         </a>
                                         <form method="POST" action="" class="d-inline" 
-                                          onsubmit="return confirm('Are you sure you want to delete this room?')">
-                                        <input type="hidden" name="delete_room" value="true">
-                                        <input type="hidden" name="room_id" value="<?php echo $room['id']; ?>">
-                                        <button type="submit" class="btn btn-sm btn-danger">
-                                            <i class="fas fa-trash"></i> Delete
-                                        </button>
-                                    </form>
+                                              onsubmit="return confirm('Are you sure you want to delete this room?')">
+                                            <input type="hidden" name="delete_room" value="true">
+                                            <input type="hidden" name="room_id" value="<?php echo $room['id']; ?>">
+                                            <button type="submit" class="btn btn-sm btn-danger">
+                                                <i class="fas fa-trash"></i> Delete
+                                            </button>
+                                        </form>
                                     </div>
                                 </div>
                             </div>
@@ -330,16 +330,14 @@ $rooms = mysqli_query($conn, $sql);
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <form method="POST" action="edit_room.php" enctype="multipart/form-data">
+                    <form method="POST" action="" enctype="multipart/form-data">
                         <div class="mb-3">
                             <label for="hotel_id" class="form-label">Hotel *</label>
                             <select class="form-select" id="hotel_id" name="hotel_id" required>
                                 <option value="">Select Hotel</option>
                                 <?php
-                                    // Need to fetch hotels here again for the modal if not already available
-                                    $sql_hotels_modal = "SELECT id, name FROM hotels ORDER BY name ASC";
-                                    $hotels_modal_result = mysqli_query($conn, $sql_hotels_modal);
-                                    while($hotel = mysqli_fetch_assoc($hotels_modal_result)): ?>
+                                mysqli_data_seek($hotels, 0); // Reset hotels cursor
+                                while($hotel = mysqli_fetch_assoc($hotels)): ?>
                                     <option value="<?php echo $hotel['id']; ?>">
                                         <?php echo htmlspecialchars($hotel['name']); ?>
                                     </option>
@@ -351,13 +349,13 @@ $rooms = mysqli_query($conn, $sql);
                             <select class="form-select" id="room_type" name="room_type" required>
                                 <option value="">Select Type</option>
                                 <?php
-                                    // Need to fetch room types here again for the modal if not already available
-                                    $sql_room_types_modal = "SELECT DISTINCT room_type FROM rooms ORDER BY room_type";
-                                    $room_types_modal_result = mysqli_query($conn, $sql_room_types_modal);
-                                    while($type_row = mysqli_fetch_assoc($room_types_modal_result)) {
-                                        echo "<option value='" . htmlspecialchars($type_row['room_type']) . "'>" . htmlspecialchars(ucfirst($type_row['room_type'])) . "</option>";
-                                    }
-                                ?>
+                                $sql_room_types = "SELECT DISTINCT room_type FROM rooms ORDER BY room_type";
+                                $room_types_result = mysqli_query($conn, $sql_room_types);
+                                while($type_row = mysqli_fetch_assoc($room_types_result)): ?>
+                                    <option value="<?php echo htmlspecialchars($type_row['room_type']); ?>">
+                                        <?php echo htmlspecialchars(ucfirst($type_row['room_type'])); ?>
+                                    </option>
+                                <?php endwhile; ?>
                             </select>
                         </div>
                         <div class="mb-3">
@@ -366,7 +364,7 @@ $rooms = mysqli_query($conn, $sql);
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="price_per_night" class="form-label">Price per Night *</label>
+                                <label for="price_per_night" class="form-label">Price per Hour *</label>
                                 <input type="number" class="form-control" id="price_per_night" name="price_per_night" step="0.01" required>
                             </div>
                             <div class="col-md-6 mb-3">
@@ -380,7 +378,7 @@ $rooms = mysqli_query($conn, $sql);
                         </div>
                         <div class="mb-3">
                             <label for="room_image" class="form-label">Room Image</label>
-                            <input type="file" class="form-control" id="room_image" name="room_image" accept="image/*" required>
+                            <input type="file" class="form-control" id="room_image" name="room_image" accept="image/*">
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -393,6 +391,6 @@ $rooms = mysqli_query($conn, $sql);
     </div>
 
     <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
-</html> 
+</html>

@@ -13,7 +13,40 @@ $max_price = isset($_GET['max_price']) && $_GET['max_price'] !== '' ? (float)$_G
 $hotel_id = isset($_GET['hotel']) ? (int)$_GET['hotel'] : 0;
 
 // Build the SQL query
-$sql = "SELECT r.*, h.name as hotel_name, h.city, h.address, h.image_url as hotel_image
+$sql = "SELECT r.*, h.name as hotel_name, h.city, h.address, h.image_url as hotel_image,
+        CASE 
+            WHEN r.status = 'available' AND EXISTS (
+                SELECT 1 FROM bookings b 
+                WHERE b.room_id = r.id   
+                AND b.booking_status IN ('pending', 'confirmed')
+                AND (
+                    (b.check_in_date <= ? AND b.check_out_date >= ?) OR
+                    (b.check_in_date <= ? AND b.check_out_date >= ?) OR
+                    (b.check_in_date >= ? AND b.check_out_date <= ?)
+                )
+            ) THEN 'booked'
+            ELSE r.status
+        END as display_status,
+        (SELECT b.check_in_date 
+         FROM bookings b 
+         WHERE b.room_id = r.id 
+         AND b.booking_status IN ('pending', 'confirmed')
+         AND (
+             (b.check_in_date <= ? AND b.check_out_date >= ?) OR
+             (b.check_in_date <= ? AND b.check_out_date >= ?) OR
+             (b.check_in_date >= ? AND b.check_out_date <= ?)
+         )
+         LIMIT 1) as booking_check_in,
+        (SELECT b.check_out_date 
+         FROM bookings b 
+         WHERE b.room_id = r.id 
+         AND b.booking_status IN ('pending', 'confirmed')
+         AND (
+             (b.check_in_date <= ? AND b.check_out_date >= ?) OR
+             (b.check_in_date <= ? AND b.check_out_date >= ?) OR
+             (b.check_in_date >= ? AND b.check_out_date <= ?)
+         )
+         LIMIT 1) as booking_check_out
         FROM rooms r 
         LEFT JOIN hotels h ON r.hotel_id = h.id";
 $params = array();
@@ -45,29 +78,19 @@ if ($max_price > 0) {
     $types .= "d";
 }
 
+// Add booking check parameters for display_status and booking dates
 if (!empty($check_in) && !empty($check_out)) {
-    $where_conditions[] = "r.id NOT IN (
-        SELECT room_id FROM bookings 
-        WHERE (check_in_date <= ? AND check_out_date >= ?)
-        OR (check_in_date <= ? AND check_out_date >= ?)
-        OR (check_in_date >= ? AND check_out_date <= ?)
-    )";
-    $params = array_merge($params, [$check_out, $check_in, $check_in, $check_in, $check_in, $check_out]);
-    $types .= "ssssss";
+    $params = array_merge($params, [
+        $check_out, $check_in, $check_in, $check_in, $check_in, $check_out, // for display_status
+        $check_out, $check_in, $check_in, $check_in, $check_in, $check_out, // for booking_check_in
+        $check_out, $check_in, $check_in, $check_in, $check_in, $check_out  // for booking_check_out
+    ]);
+    $types .= "ssssssssssssssssss";
 }
 
 $where_conditions[] = "r.capacity >= ?";
 $params[] = $adults + $children;
 $types .= "i";
-
-// // Add debug output if debug parameter is set
-// if (isset($_GET['debug'])) {
-//     echo "SQL Query: " . $sql . "<br>";
-//     echo "Parameters: ";
-//     print_r($params);
-//     echo "<br>Types: " . $types . "<br>";
-//     echo "Max Price: " . $max_price . "<br>";
-// }
 
 if (!empty($where_conditions)) {
     $sql .= " WHERE " . implode(" AND ", $where_conditions);
@@ -230,7 +253,7 @@ $rooms_found = mysqli_num_rows($result) > 0;
         }
         .card-img-left {
             width: 250px;
-            height: 200px;
+            height: 223px;
             object-fit: cover;
             max-width: 100%;
             border-radius: 10px 0 0 10px;
@@ -297,6 +320,31 @@ $rooms_found = mysqli_num_rows($result) > 0;
             font-size: 1rem;
             font-weight: 500;
         }
+        .status-badge {
+            position: absolute;
+            top: 150px;
+            right: 20px;
+            padding: 8px 15px;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: white;
+        }
+        .status-available {
+            background-color: #28a745;
+        }
+        .status-booked {
+            background-color: #dc3545;
+        }
+        .status-maintenance {
+            background-color: #fd7e14;
+        }
+        .booking-dates {
+            font-size: 0.85rem;
+            color: #555;
+            margin-top: 5px;
+            font-family: 'Poppins', sans-serif;
+        }
         .footer {
             background-color: #1a1a1a;
             color: white;
@@ -314,6 +362,10 @@ $rooms_found = mysqli_num_rows($result) > 0;
             background-color: #b38b12;
             transform: translateY(-2px);
         }
+        .btn-custom:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
         @media (max-width: 768px) {
             .room-card {
                 flex-direction: column;
@@ -329,6 +381,13 @@ $rooms_found = mysqli_num_rows($result) > 0;
             .price-badge {
                 top: 10px;
                 right: 10px;
+            }
+            .status-badge {
+                top: 50px;
+                right: 10px;
+            }
+            .booking-dates {
+                margin-top: 40px;
             }
         }
     </style>
@@ -373,8 +432,7 @@ $rooms_found = mysqli_num_rows($result) > 0;
                                 <a class="nav-link" href="login.php">Login</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" href="register.php">Register</a>
-                            </li>
+                                <a class="nav-link" href="register.php">Register</a></li>
                         <?php endif; ?>
                     </ul>
                 </div>
@@ -393,7 +451,7 @@ $rooms_found = mysqli_num_rows($result) > 0;
                 <div class="col-lg-6">
                     <div class="hero-content">
                         <h3 class="text-center">Search Availability</h3>
-                        <form action="room-list.php" method="GET">
+                        <form action="room-list.php" method="GET" class="search-form">
                             <div class="mb-3">
                                 <label for="city" class="form-label">City Name</label>
                                 <select class="form-select" id="city" name="city">
@@ -419,7 +477,7 @@ $rooms_found = mysqli_num_rows($result) > 0;
                                        value="<?php echo htmlspecialchars($check_out); ?>" required>
                             </div>
                             <div class="row mb-3 mt-2">
-                                 <div class="col-md-4">
+                                <div class="col-md-4">
                                     <label for="room_type" class="form-label">Room Type</label>
                                     <select class="form-select" id="room_type" name="room_type">
                                         <option value="">All Room Types</option>
@@ -444,7 +502,7 @@ $rooms_found = mysqli_num_rows($result) > 0;
                                            min="0" max="3" value="<?php echo htmlspecialchars($children); ?>" required>
                                 </div>
                             </div>
-                             <div class="mb-3">
+                            <div class="mb-3">
                                 <label for="max_price" class="form-label">Room Price</label>
                                 <input type="number" class="form-control" id="max_price" name="max_price" 
                                        min="0" placeholder="Enter price" value="<?php echo htmlspecialchars($max_price > 0 ? $max_price : ''); ?>">
@@ -464,14 +522,13 @@ $rooms_found = mysqli_num_rows($result) > 0;
         <div class="container">
             <h2 class="text-center mb-5">Explore Our Luxurious Rooms</h2>
             <div class="row">
-                <!-- Room Cards (Right Side) -->
                 <div class="container">
                     <?php if ($rooms_found): ?>
                         <?php while($room = mysqli_fetch_assoc($result)): ?>
                             <div class="room-card">
                                 <img src="<?php echo htmlspecialchars($room['image_url']); ?>" class="card-img-left" alt="<?php echo htmlspecialchars($room['room_type']); ?>" onerror="this.src='https://images.unsplash.com/photo-1618773928121-c32242e63f39';">
                                 <div class="room-details">
-                                    <h5><?php echo htmlspecialchars($room['room_type']); ?></h5>
+                                    <h5><?php echo htmlspecialchars($room['room_type']); ?>    >>>   Room no<?php echo $room['id']; ?></h5>
                                     <p class="description"><?php echo htmlspecialchars($room['description']); ?></p>
                                     <p class="specs">
                                         <?php 
@@ -520,21 +577,32 @@ $rooms_found = mysqli_num_rows($result) > 0;
                                         }
                                         ?>
                                     </div>
-                                    <?php if (isLoggedIn()): ?>
+                                    <?php if (isLoggedIn() && $room['display_status'] == 'available'): ?>
                                         <a href="booking.php?room_id=<?php echo $room['id']; ?>&check_in=<?php echo urlencode($check_in); ?>&check_out=<?php echo urlencode($check_out); ?>&adults=<?php echo $adults; ?>&children=<?php echo $children; ?>" class="btn btn-custom">Book Now</a>
-                                    <?php else: ?>
+                                    <?php elseif (!isLoggedIn() && $room['display_status'] == 'available'): ?>
                                         <a href="login.php?redirect=room-list.php&room_id=<?php echo $room['id']; ?>&check_in=<?php echo urlencode($check_in); ?>&check_out=<?php echo urlencode($check_out); ?>&adults=<?php echo $adults; ?>&children=<?php echo $children; ?>" class="btn btn-custom">Login to Book</a>
+                                    <?php else: ?>
+                                        <button class="btn btn-custom" disabled><?php echo ucfirst($room['display_status']); ?></button>
                                     <?php endif; ?>
-                                    <div class="price-badge">PKR <?php echo number_format($room['price_per_night'], 2); ?>/night</div>
+                                    <div class="price-badge">PKR <?php echo number_format($room['price_per_night'], 2); ?>/Hour</div>
+                                    <div class="status-badge <?php echo $room['display_status'] == 'available' ? 'status-available' : ($room['display_status'] == 'booked' ? 'status-booked' : 'status-maintenance'); ?>">
+                                        <?php echo ucfirst(htmlspecialchars($room['display_status'])); ?>
+                                    </div>
+                                    <?php if ($room['display_status'] == 'booked' && !empty($room['booking_check_in']) && !empty($room['booking_check_out'])): ?>
+                                        <div class="booking-dates">
+                                            Booked from <?php echo date('M d, Y h:i A', strtotime($room['booking_check_in'])); ?> 
+                                            to <?php echo date('M d, Y h:i A', strtotime($room['booking_check_out'])); ?>
+                                        </div>
+                                    <?php endif; ?>
                                 </div>
                             </div>
                         <?php endwhile; ?>
                     <?php else: ?>
                         <div class="alert alert-info">
                             <?php if ($max_price > 0): ?>
-                                No rooms available within the price range of PKR <?php echo number_format($max_price, 2); ?>. Please try a higher price range.
+                                No rooms found within the price range of PKR <?php echo number_format($max_price, 2); ?>. Please try a higher price range.
                             <?php else: ?>
-                                No rooms available for the selected criteria. Please try different dates or room type.
+                                No rooms found for the selected criteria. Please try different filters.
                             <?php endif; ?>
                         </div>
                     <?php endif; ?>
@@ -609,4 +677,4 @@ $rooms_found = mysqli_num_rows($result) > 0;
     });
     </script>
 </body>
-</html> 
+</html>

@@ -8,6 +8,9 @@ requireLogin();
 // Get user data
 $user = getUserData();
 
+$error = '';
+$success = '';
+
 // Handle booking cancellation
 if (isset($_POST['cancel_booking'])) {
     $booking_id = (int)$_POST['booking_id'];
@@ -26,14 +29,104 @@ if (isset($_POST['cancel_booking'])) {
             $sql = "UPDATE bookings SET booking_status = 'cancelled' WHERE id = ?";
             $stmt = mysqli_prepare($conn, $sql);
             mysqli_stmt_bind_param($stmt, "i", $booking_id);
-            mysqli_stmt_execute($stmt);
+            if (mysqli_stmt_execute($stmt)) {
+                $success = "Booking cancelled successfully.";
+            } else {
+                $error = "Error cancelling booking.";
+            }
+        } else {
+            $error = "Cannot cancel this booking.";
+        }
+    } else {
+        $error = "Booking not found or unauthorized.";
+    }
+}
+
+// Handle booking edit
+if (isset($_POST['edit_booking'])) {
+    $booking_id = (int)$_POST['booking_id'];
+    $user_id = $_SESSION['user_id'];
+    $check_in = $_POST['check_in'];
+    $check_out = $_POST['check_out'];
+    $adults = (int)$_POST['adults'];
+    $children = (int)$_POST['children'];
+
+    // Validate inputs
+    $check_in_date = new DateTime($check_in);
+    $check_out_date = new DateTime($check_out);
+    $now = new DateTime(); // Current time: May 26, 2025, 02:22 PM PKT
+
+    if ($check_out_date <= $check_in_date) {
+        $error = "Check-out date and time must be after check-in.";
+    } elseif ($check_in_date < $now) {
+        $error = "Check-in date and time cannot be in the past.";
+    } elseif ($adults < 1) {
+        $error = "At least one adult is required.";
+    } else {
+        // Verify booking belongs to user and get room details
+        $sql = "SELECT b.*, r.price_per_night, r.capacity 
+                FROM bookings b 
+                JOIN rooms r ON b.room_id = r.id 
+                WHERE b.id = ? AND b.user_id = ?";
+        $stmt = mysqli_prepare($conn, $sql);
+        mysqli_stmt_bind_param($stmt, "ii", $booking_id, $user_id);
+        mysqli_stmt_execute($stmt);
+        $result = mysqli_stmt_get_result($stmt);
+        
+        if ($booking = mysqli_fetch_assoc($result)) {
+            // Only allow editing of pending or confirmed bookings
+            if (!in_array($booking['booking_status'], ['pending', 'confirmed'])) {
+                $error = "Cannot edit a cancelled booking.";
+            } elseif ($adults + $children > $booking['capacity']) {
+                $error = "Total guests exceed room capacity of {$booking['capacity']}.";
+            } else {
+                // Check for overlapping bookings (excluding current booking)
+                $sql = "SELECT id FROM bookings 
+                        WHERE room_id = ? AND booking_status IN ('pending', 'confirmed') 
+                        AND id != ? 
+                        AND ((check_in_date <= ? AND check_out_date >= ?) 
+                             OR (check_in_date <= ? AND check_out_date >= ?) 
+                             OR (check_in_date >= ? AND check_out_date <= ?))";
+                $stmt = mysqli_prepare($conn, $sql);
+                mysqli_stmt_bind_param($stmt, "iissssss", $booking['room_id'], $booking_id, 
+                    $check_out, $check_in, $check_out, $check_in, $check_in, $check_out);
+                mysqli_stmt_execute($stmt);
+                mysqli_stmt_store_result($stmt);
+
+                if (mysqli_stmt_num_rows($stmt) > 0) {
+                    $error = "The room is unavailable for the selected dates and times.";
+                } else {
+                    // Calculate new total price based on hours
+                    $interval = $check_in_date->diff($check_out_date);
+                    $hours = ($interval->days * 24) + $interval->h;
+                    if ($interval->i > 0 || $interval->s > 0) {
+                        $hours++; // Round up partial hours
+                    }
+                    $total_price = $booking['price_per_night'] * $hours;
+
+                    // Update booking
+                    $sql = "UPDATE bookings 
+                            SET check_in_date = ?, check_out_date = ?, adults = ?, children = ?, total_price = ? 
+                            WHERE id = ?";
+                    $stmt = mysqli_prepare($conn, $sql);
+                    mysqli_stmt_bind_param($stmt, "ssiidi", $check_in, $check_out, $adults, $children, $total_price, $booking_id);
+                    
+                    if (mysqli_stmt_execute($stmt)) {
+                        $success = "Booking updated successfully.";
+                    } else {
+                        $error = "Error updating booking: " . mysqli_error($conn);
+                    }
+                }
+            }
+        } else {
+            $error = "Booking not found or unauthorized.";
         }
     }
 }
 
 // Get all bookings
 $user_id = $_SESSION['user_id'];
-$sql = "SELECT b.*, r.room_type, r.image_url 
+$sql = "SELECT b.*, r.room_type, r.image_url, r.price_per_night 
         FROM bookings b 
         JOIN rooms r ON b.room_id = r.id 
         WHERE b.user_id = ? 
@@ -50,7 +143,7 @@ $bookings = mysqli_stmt_get_result($stmt);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Bookings - Jhang Hotels</title>
     <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <!-- Google Fonts: Poppins -->
@@ -135,11 +228,26 @@ $bookings = mysqli_stmt_get_result($stmt);
             background-color: #c82333;
             transform: translateY(-2px);
         }
+        .btn-edit {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+        .btn-edit:hover {
+            background-color: #218838;
+            transform: translateY(-2px);
+        }
         .booking-details {
             background-color: #f8f9fa;
             padding: 15px;
             border-radius: 10px;
             margin-top: 15px;
+        }
+        .alert {
+            margin-bottom: 20px;
         }
     </style>
 </head>
@@ -172,8 +280,26 @@ $bookings = mysqli_stmt_get_result($stmt);
             <div class="col-md-9 col-lg-10 main-content">
                 <h2 class="mb-4">My Bookings</h2>
                 
+                <?php if ($error): ?>
+                    <div class="alert alert-danger"><?php echo $error; ?></div>
+                <?php endif; ?>
+                
+                <?php if ($success): ?>
+                    <div class="alert alert-success"><?php echo $success; ?></div>
+                <?php endif; ?>
+                
                 <?php if (mysqli_num_rows($bookings) > 0): ?>
                     <?php while($booking = mysqli_fetch_assoc($bookings)): ?>
+                        <?php
+                        // Calculate hours for display
+                        $check_in_date = new DateTime($booking['check_in_date']);
+                        $check_out_date = new DateTime($booking['check_out_date']);
+                        $interval = $check_in_date->diff($check_out_date);
+                        $hours = ($interval->days * 24) + $interval->h;
+                        if ($interval->i > 0 || $interval->s > 0) {
+                            $hours++; // Round up partial hours
+                        }
+                        ?>
                         <div class="booking-card">
                             <div class="row">
                                 <div class="col-md-3">
@@ -196,23 +322,67 @@ $bookings = mysqli_stmt_get_result($stmt);
                                     <div class="booking-details">
                                         <div class="row">
                                             <div class="col-md-6">
-                                                <p><strong>Check-in:</strong> <?php echo date('M d, Y', strtotime($booking['check_in_date'])); ?></p>
-                                                <p><strong>Check-out:</strong> <?php echo date('M d, Y', strtotime($booking['check_out_date'])); ?></p>
+                                                <p><strong>Check-in:</strong> <?php echo date('M d, Y h:i A', strtotime($booking['check_in_date'])); ?></p>
+                                                <p><strong>Check-out:</strong> <?php echo date('M d, Y h:i A', strtotime($booking['check_out_date'])); ?></p>
                                             </div>
                                             <div class="col-md-6">
                                                 <p><strong>Guests:</strong> <?php echo $booking['adults']; ?> Adult<?php echo $booking['adults'] > 1 ? 's' : ''; ?><?php echo $booking['children'] > 0 ? ', ' . $booking['children'] . ' Child' . ($booking['children'] > 1 ? 'ren' : '') : ''; ?></p>
-                                                <p><strong>Nights:</strong> <?php echo (strtotime($booking['check_out_date']) - strtotime($booking['check_in_date'])) / (60 * 60 * 24); ?></p>
+                                                <p><strong>Hours:</strong> <?php echo $hours; ?></p>
                                             </div>
                                         </div>
                                         
                                         <?php if (in_array($booking['booking_status'], ['pending', 'confirmed'])): ?>
-                                            <form method="POST" action="" class="mt-3" onsubmit="return confirm('Are you sure you want to cancel this booking?');">
-                                                <input type="hidden" name="booking_id" value="<?php echo $booking['id']; ?>">
-                                                <button type="submit" name="cancel_booking" class="btn btn-cancel">
-                                                    <i class="fas fa-times"></i> Cancel Booking
+                                            <div class="mt-3 d-flex gap-2">
+                                                <button type="button" class="btn btn-edit" data-bs-toggle="modal" data-bs-target="#editBookingModal<?php echo $booking['id']; ?>">
+                                                    <i class="fas fa-edit"></i> Edit Booking
                                                 </button>
-                                            </form>
+                                                <form method="POST" action="" class="d-inline" onsubmit="return confirm('Are you sure you want to cancel this booking?');">
+                                                    <input type="hidden" name="booking_id" value="<?php echo $booking['id']; ?>">
+                                                    <button type="submit" name="cancel_booking" class="btn btn-cancel">
+                                                        <i class="fas fa-times"></i> Cancel Booking
+                                                    </button>
+                                                </form>
+                                            </div>
                                         <?php endif; ?>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Edit Booking Modal -->
+                        <div class="modal fade" id="editBookingModal<?php echo $booking['id']; ?>" tabindex="-1">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Edit Booking: <?php echo htmlspecialchars($booking['room_type']); ?></h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <form method="POST" action="">
+                                            <input type="hidden" name="booking_id" value="<?php echo $booking['id']; ?>">
+                                            <div class="mb-3">
+                                                <label for="check_in_<?php echo $booking['id']; ?>" class="form-label">Check-in Date & Time *</label>
+                                                <input type="datetime-local" class="form-control" id="check_in_<?php echo $booking['id']; ?>" name="check_in" value="<?php echo date('Y-m-d\TH:i', strtotime($booking['check_in_date'])); ?>" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="check_out_<?php echo $booking['id']; ?>" class="form-label">Check-out Date & Time *</label>
+                                                <input type="datetime-local" class="form-control" id="check_out_<?php echo $booking['id']; ?>" name="check_out" value="<?php echo date('Y-m-d\TH:i', strtotime($booking['check_out_date'])); ?>" required>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-md-6 mb-3">
+                                                    <label for="adults_<?php echo $booking['id']; ?>" class="form-label">Adults *</label>
+                                                    <input type="number" class="form-control" id="adults_<?php echo $booking['id']; ?>" name="adults" min="1" value="<?php echo $booking['adults']; ?>" required>
+                                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <label for="children_<?php echo $booking['id']; ?>" class="form-label">Children</label>
+                                                    <input type="number" class="form-control" id="children_<?php echo $booking['id']; ?>" name="children" min="0" value="<?php echo $booking['children']; ?>" required>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                <button type="submit" name="edit_booking" class="btn btn-edit">Save Changes</button>
+                                            </div>
+                                        </form>
                                     </div>
                                 </div>
                             </div>
@@ -229,6 +399,19 @@ $bookings = mysqli_stmt_get_result($stmt);
     </div>
 
     <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // JavaScript to validate check-out is after check-in
+        document.querySelectorAll('form').forEach(form => {
+            form.addEventListener('submit', function(e) {
+                const checkIn = new Date(this.querySelector('[name="check_in"]').value);
+                const checkOut = new Date(this.querySelector('[name="check_out"]').value);
+                if (checkOut <= checkIn) {
+                    e.preventDefault();
+                    alert('Check-out date and time must be after check-in date and time.');
+                }
+            });
+        });
+    </script>
 </body>
-</html> 
+</html>
