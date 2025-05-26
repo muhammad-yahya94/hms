@@ -10,6 +10,7 @@ $children = isset($_GET['children']) ? (int)$_GET['children'] : 0;
 $room_type = isset($_GET['room_type']) ? $_GET['room_type'] : '';
 $city = isset($_GET['city']) ? $_GET['city'] : '';
 $max_price = isset($_GET['max_price']) && $_GET['max_price'] !== '' ? (float)$_GET['max_price'] : 0;
+$hotel_id = isset($_GET['hotel']) ? (int)$_GET['hotel'] : 0;
 
 // Build the SQL query
 $sql = "SELECT r.*, h.name as hotel_name, h.city, h.address, h.image_url as hotel_image
@@ -19,6 +20,12 @@ $params = array();
 $types = "";
 
 $where_conditions = array();
+
+if ($hotel_id > 0) {
+    $where_conditions[] = "r.hotel_id = ?";
+    $params[] = $hotel_id;
+    $types .= "i";
+}
 
 if (!empty($room_type)) {
     $where_conditions[] = "r.room_type = ?";
@@ -358,9 +365,6 @@ $rooms_found = mysqli_num_rows($result) > 0;
                                     <?php else: ?>
                                         <li><a class="dropdown-item" href="user/dashboard.php">My Dashboard</a></li>
                                     <?php endif; ?>
-                                    <li><a class="dropdown-item" href="user/bookings.php">My Bookings</a></li>
-                                    <li><a class="dropdown-item" href="user/profile.php">Profile</a></li>
-                                    <li><hr class="dropdown-divider"></li>
                                     <li><a class="dropdown-item" href="logout.php">Logout</a></li>
                                 </ul>
                             </li>

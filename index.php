@@ -368,7 +368,7 @@ $check_out = isset($_GET['check_out']) ? $_GET['check_out'] : date('Y-m-d 12:00'
                         <p class="price-range">
                             From Pkr<?php echo number_format($category['min_price'], 2); ?> to Pkr<?php echo number_format($category['max_price'], 2); ?> per night
                         </p>
-                        <a href="room-list.php?type=<?php echo urlencode($category['room_type']); ?>" class="btn btn-custom">View Rooms</a>
+                        <a href="room-list.php?room_type=<?php echo urlencode($category['room_type']); ?>" class="btn btn-custom">View Rooms</a>
                     </div>
                 </div>
                 <?php endforeach; ?>
