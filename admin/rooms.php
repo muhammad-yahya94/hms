@@ -345,7 +345,7 @@ mysqli_stmt_close($stmt);
                         <?php while($room = mysqli_fetch_assoc($rooms)): ?>
                             <div class="col-md-6 col-lg-4">
                                 <div class="room-card">
-                                    <?php if (!empty($room['image_url'])): ?>
+                                    <?php if (!empty($room['image_url'])): ?>  
                                         <img src="../<?php echo htmlspecialchars($room['image_url']); ?>" alt="Room Image" class="room-image">
                                     <?php endif; ?>
                                     <div class="room-details">
@@ -525,7 +525,7 @@ mysqli_stmt_close($stmt);
                             </select>
                         </div>
                         <div class="mb-3">
-                            <label for="edit_room_image" class="form-label">Room Image (Max 5MB)</label>
+                            <label for="edit_room_image" class="form-label">Room Image</label>
                             <input type="file" class="form-control" id="edit_room_image" name="room_image" accept="image/*">
                             <img id="editImagePreview" src="#" style="width:200px;margin-top:20px" alt="Image Preview">
                         </div>
