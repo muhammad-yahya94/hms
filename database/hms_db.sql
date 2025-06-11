@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 30, 2025 at 03:39 AM
+-- Generation Time: Jun 11, 2025 at 02:08 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -50,7 +50,36 @@ CREATE TABLE `bookings` (
 
 INSERT INTO `bookings` (`id`, `user_id`, `hotel_id`, `room_id`, `check_in_date`, `check_out_date`, `adults`, `children`, `total_price`, `booking_status`, `created_at`, `status`, `check_in`, `check_out`) VALUES
 (1, 5, 1, 1, '2025-05-26 13:41:00', '2025-05-26 16:41:00', 3, 1, 600.00, 'pending', '2025-05-27 04:38:53', 'pending', NULL, NULL),
-(2, 5, 2, 4, '2025-05-25 11:29:00', '2025-05-25 16:29:00', 3, 1, 1000.00, 'confirmed', '2025-05-27 04:38:53', 'confirmed', '2025-05-25 11:29:00', '2025-05-25 16:29:00');
+(2, 5, 2, 4, '2025-05-25 11:29:00', '2025-05-25 16:29:00', 3, 1, 1000.00, 'confirmed', '2025-05-27 04:38:53', 'confirmed', '2025-05-25 11:29:00', '2025-05-25 16:29:00'),
+(33, 3, 1, 1, '2025-05-30 03:46:00', '2025-05-31 03:46:00', 2, 0, 115200.00, 'cancelled', '2025-05-30 01:47:39', 'pending', NULL, NULL),
+(34, 2, 1, 1, '2025-05-31 04:17:00', '2025-06-01 04:17:00', 2, 0, 115200.00, 'cancelled', '2025-05-31 02:17:57', 'pending', NULL, NULL),
+(35, 3, 1, 1, '2025-06-01 04:21:00', '2025-06-02 04:21:00', 2, 0, 4800.00, 'cancelled', '2025-05-31 02:21:46', 'pending', NULL, NULL),
+(36, 3, 1, 1, '2025-06-11 13:25:00', '2025-06-12 13:25:00', 2, 0, 115200.00, 'confirmed', '2025-06-11 11:25:11', 'pending', NULL, NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `food_orders`
+--
+
+CREATE TABLE `food_orders` (
+  `id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `hotel_id` int(11) NOT NULL,
+  `menu_item_id` int(11) NOT NULL,
+  `quantity` int(11) NOT NULL,
+  `total_price` decimal(10,2) NOT NULL,
+  `order_status` enum('pending','confirmed','cancelled','delivered') DEFAULT 'pending',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `food_orders`
+--
+
+INSERT INTO `food_orders` (`id`, `user_id`, `hotel_id`, `menu_item_id`, `quantity`, `total_price`, `order_status`, `created_at`) VALUES
+(3, 3, 1, 4, 1, 200.00, 'delivered', '2025-06-11 11:40:48'),
+(4, 3, 1, 4, 1, 200.00, 'delivered', '2025-06-11 11:44:07');
 
 -- --------------------------------------------------------
 
@@ -84,6 +113,32 @@ INSERT INTO `hotels` (`id`, `name`, `description`, `address`, `city`, `phone`, `
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `hotel_menu`
+--
+
+CREATE TABLE `hotel_menu` (
+  `id` int(11) NOT NULL,
+  `hotel_id` int(11) NOT NULL,
+  `item_name` varchar(100) NOT NULL,
+  `price` decimal(10,2) NOT NULL,
+  `is_available` tinyint(1) DEFAULT 1,
+  `image_url` varchar(255) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `hotel_menu`
+--
+
+INSERT INTO `hotel_menu` (`id`, `hotel_id`, `item_name`, `price`, `is_available`, `image_url`) VALUES
+(1, 2, 'biryani', 200.00, 1, 'Uploads/food/food_68496149bcfce.jpg'),
+(2, 2, 'pulao', 150.00, 0, 'Uploads/food/food_68496149bebc6.jpg'),
+(3, 1, 'biryani', 500.00, 1, 'Uploads/food/food_68496925b76ae.jpg'),
+(4, 1, 'alo gosht', 200.00, 1, 'Uploads/food/food_68496a95e22b4.jpg'),
+(5, 1, 'alo matar', 400.00, 1, 'Uploads/food/food_68496a95e31a1.jpg');
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `rooms`
 --
 
@@ -106,10 +161,10 @@ CREATE TABLE `rooms` (
 --
 
 INSERT INTO `rooms` (`id`, `hotel_id`, `room_type`, `description`, `price_per_night`, `capacity`, `image_url`, `amenities`, `status`, `created_at`, `updated_at`) VALUES
-(1, 1, 'standard', 'standard room in Ali Hotel No. 1.', 4800.00, 2, 'includes/images/room_standard_1_1.jpg', 'WiFi, TV, AC', 'available', '2025-05-27 04:38:53', '2025-05-27 04:41:04'),
+(1, 1, 'standard', 'standard room in Ali Hotel No. 1.', 4800.00, 2, 'includes/images/room_standard_1_1.jpg', 'WiFi, TV, AC', 'booked', '2025-05-27 04:38:53', '2025-06-11 12:05:03'),
 (2, 1, 'deluxe', 'deluxe room in Ali Hotel No. 1.', 7200.00, 3, 'includes/images/room_deluxe_1_2.jpg', 'WiFi, TV, AC, Minibar', 'available', '2025-05-27 04:38:53', '2025-05-27 04:43:08'),
-(3, 2, 'standard', 'standard room in Zainab Hotel No. 1.', 4800.00, 2, 'includes/images/room_standard_2_1.jpg', 'WiFi, TV, AC', '', '2025-05-27 04:38:53', '2025-05-27 04:38:53'),
-(4, 2, 'deluxe', 'deluxe room in Zainab Hotel No. 1.', 7200.00, 3, 'includes/images/room_deluxe_2_2.jpg', 'WiFi, TV, AC, Minibar', '', '2025-05-27 04:38:53', '2025-05-27 04:38:53');
+(3, 2, 'standard', 'standard room in Zainab Hotel No. 1.', 4800.00, 2, 'includes/images/room_standard_2_1.jpg', 'WiFi, TV, AC', 'available', '2025-05-27 04:38:53', '2025-05-31 02:17:07'),
+(4, 2, 'deluxe', 'deluxe room in Zainab Hotel No. 1.', 7200.00, 3, 'includes/images/room_deluxe_2_2.jpg', 'WiFi, TV, AC, Minibar', 'booked', '2025-05-27 04:38:53', '2025-05-31 02:17:18');
 
 -- --------------------------------------------------------
 
@@ -156,11 +211,27 @@ ALTER TABLE `bookings`
   ADD KEY `room_id` (`room_id`);
 
 --
+-- Indexes for table `food_orders`
+--
+ALTER TABLE `food_orders`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `user_id` (`user_id`),
+  ADD KEY `hotel_id` (`hotel_id`),
+  ADD KEY `menu_item_id` (`menu_item_id`);
+
+--
 -- Indexes for table `hotels`
 --
 ALTER TABLE `hotels`
   ADD PRIMARY KEY (`id`),
   ADD KEY `fk_vendor_id` (`vendor_id`);
+
+--
+-- Indexes for table `hotel_menu`
+--
+ALTER TABLE `hotel_menu`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `hotel_id` (`hotel_id`);
 
 --
 -- Indexes for table `rooms`
@@ -185,13 +256,25 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `bookings`
 --
 ALTER TABLE `bookings`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=33;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=37;
+
+--
+-- AUTO_INCREMENT for table `food_orders`
+--
+ALTER TABLE `food_orders`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `hotels`
 --
 ALTER TABLE `hotels`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+
+--
+-- AUTO_INCREMENT for table `hotel_menu`
+--
+ALTER TABLE `hotel_menu`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `rooms`
@@ -218,10 +301,24 @@ ALTER TABLE `bookings`
   ADD CONSTRAINT `bookings_ibfk_3` FOREIGN KEY (`room_id`) REFERENCES `rooms` (`id`);
 
 --
+-- Constraints for table `food_orders`
+--
+ALTER TABLE `food_orders`
+  ADD CONSTRAINT `food_orders_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
+  ADD CONSTRAINT `food_orders_ibfk_2` FOREIGN KEY (`hotel_id`) REFERENCES `hotels` (`id`),
+  ADD CONSTRAINT `food_orders_ibfk_3` FOREIGN KEY (`menu_item_id`) REFERENCES `hotel_menu` (`id`);
+
+--
 -- Constraints for table `hotels`
 --
 ALTER TABLE `hotels`
   ADD CONSTRAINT `fk_vendor_id` FOREIGN KEY (`vendor_id`) REFERENCES `users` (`id`);
+
+--
+-- Constraints for table `hotel_menu`
+--
+ALTER TABLE `hotel_menu`
+  ADD CONSTRAINT `hotel_menu_ibfk_1` FOREIGN KEY (`hotel_id`) REFERENCES `hotels` (`id`);
 
 --
 -- Constraints for table `rooms`

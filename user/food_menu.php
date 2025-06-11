@@ -11,15 +11,15 @@ $user = getUserData();
 $error = '';
 $success = '';
 $user_id = $_SESSION['user_id'];
-$current_time = date('Y-m-d H:i:s'); // Current time: 2025-06-11 16:41:00 PKT
+$current_time = date('Y-m-d H:i:s'); // Current time: 2025-06-11 17:00:00 PKT
 
-// Check for active booking
+// Check for active booking with 'booked' status
 $active_booking = null;
 $sql = "SELECT b.hotel_id, h.name AS hotel_name 
         FROM bookings b 
         JOIN hotels h ON b.hotel_id = h.id 
         WHERE b.user_id = ? 
-        AND b.booking_status IN ('pending', 'confirmed') 
+        AND b.booking_status = 'confirmed' 
         AND b.check_in_date <= ? 
         AND b.check_out_date >= ? 
         LIMIT 1";
@@ -260,7 +260,7 @@ if (!empty($active_booking)) {
 
                 <?php if (empty($active_booking)): ?>
                     <div class="alert alert-info">
-                        You don't have an active room booking. Please <a href="../room-list.php" class="alert-link">book a room</a> to order food.
+                        You don't have an active room booking with 'confirmed' status. Please <a href="../room-list.php" class="alert-link">book a room</a> to order food.
                     </div>
                 <?php elseif (empty($menu_items)): ?>
                     <div class="alert alert-info">
@@ -316,7 +316,7 @@ if (!empty($active_booking)) {
         document.getElementById('orderForm')?.addEventListener('submit', function(e) {
             <?php if (empty($active_booking)): ?>
                 e.preventDefault();
-                alert('You must have an active room booking to place a food order.');
+                alert('You must have an active room booking with "booked" status to place a food order.');
                 return;
             <?php endif; ?>
             const quantities = document.querySelectorAll('.quantity-input');

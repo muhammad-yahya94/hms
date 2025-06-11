@@ -166,7 +166,7 @@ $recent_bookings = mysqli_stmt_get_result($stmt);
                     <a class="nav-link" href="bookings.php">
                         <i class="fas fa-calendar-alt"></i> My Bookings
                     </a>
-                    <a class="nav-link active" href="food_menu.php">
+                    <a class="nav-link" href="food_menu.php">
                         <i class="fas fa-utensils"></i> Food Menu
                     </a>
                     <a class="nav-link" href="food_orders.php">
