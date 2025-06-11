@@ -206,12 +206,14 @@ $users = mysqli_stmt_get_result($stmt);
                     <a class="nav-link" href="rooms.php">
                         <i class="fas fa-bed"></i> Rooms
                     </a>
+                    <a class="nav-link" href="food.php"><i class="fas fa-utensils"></i> Food Menu</a>
                     <a class="nav-link active" href="users.php">
                         <i class="fas fa-users"></i> Users
                     </a>
                     <a class="nav-link" href="reservations.php">
                         <i class="fas fa-calendar-check"></i> Reservations
                     </a>
+                    <a class="nav-link" href="food_orders.php"><i class="fas fa-shopping-cart"></i> Food Orders</a>
                     <a class="nav-link" href="../index.php" target="_blank">
                         <i class="fas fa-external-link-alt"></i> View Site
                     </a>

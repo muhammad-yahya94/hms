@@ -209,6 +209,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                     <a class="nav-link" href="bookings.php">
                         <i class="fas fa-calendar-alt"></i> My Bookings
                     </a>
+                    <a class="nav-link active" href="food_menu.php">
+                        <i class="fas fa-utensils"></i> Food Menu
+                    </a>
+                    <a class="nav-link" href="food_orders.php">
+                        <i class="fas fa-shopping-cart"></i> My Food Orders
+                    </a>
                     <a class="nav-link active" href="profile.php">
                         <i class="fas fa-user"></i> Profile
                     </a>
