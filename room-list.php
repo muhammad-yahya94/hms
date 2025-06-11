@@ -399,14 +399,23 @@ $rooms_found = mysqli_num_rows($result) > 0;
                 </button>
                 <div class="collapse navbar-collapse" id="navbarNav">
                     <ul class="navbar-nav ms-auto">
-                        <li class="nav-item">
+                    <li class="nav-item">
                             <a class="nav-link" href="index.php">Home</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="#rooms">Rooms</a>
+                            <a class="nav-link" href="room-list.php">Rooms</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="#contact">Contact</a>
+                            <a class="nav-link" href="hotels.php">Hotels</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="about.php">About Us</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="gallery.php">Gallery</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="index.php#contact">Contact Us</a>
                         </li>
                         <?php if (isLoggedIn()): ?>
                             <li class="nav-item dropdown">
@@ -612,25 +621,29 @@ $rooms_found = mysqli_num_rows($result) > 0;
             <div class="row">
                 <div class="col-md-4">
                     <h5>Jhang Hotels</h5>
-                    <p>Experience matchless hospitality in the heart of Jhang.</p>
+                    <p>Experience luxury and comfort in the heart of Jhang.</p>
                 </div>
                 <div class="col-md-4">
                     <h5>Quick Links</h5>
                     <ul class="list-unstyled">
-                        <li><a href="room-list.php" class="text-white">Rooms</a></li>
-                        <li><a href="#dining" class="text-white">Dining</a></li>
-                        <li><a href="#events" class="text-white">Events</a></li>
-                        <li><a href="#wellness" class="text-white">Wellness</a></li>
+                        <li><a href="room-list.php" class="text-white text-decoration-none">Rooms</a></li>
+                        <li><a href="about.php" class="text-white text-decoration-none">About Us</a></li>
+                        <li><a href="gallery.php" class="text-white text-decoration-none">Gallery</a></li>
+                        <li><a href="index.php#contact" class="text-white text-decoration-none">Contact Us</a></li>
                     </ul>
                 </div>
                 <div class="col-md-4">
-                    <h5>Contact Us</h5>
-                    <p>Jhang Hotels, Gulberg & Johar Town, Jhang, Pakistan</p>
-                    <p>Email: info@jhanghotels.com</p>
+                    <h5>Follow Us</h5>
+                    <div class="social-links">
+                        <a href="#" class="text-white me-2"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#" class="text-white me-2"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="text-white me-2"><i class="fab fa-instagram"></i></a>
+                    </div>
                 </div>
             </div>
-            <div class="text-center mt-4">
-                <p>© <?php echo date('Y'); ?> Jhang Hotels. All rights reserved.</p>
+            <hr>
+            <div class="text-center">
+                <p class="mb-0">© <?php echo date('Y'); ?> Jhang Hotels. All rights reserved.</p>
             </div>
         </div>
     </footer>
@@ -639,6 +652,20 @@ $rooms_found = mysqli_num_rows($result) > 0;
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Custom JavaScript -->
     <script>
+                // Navbar scroll effect
+                window.addEventListener('scroll', function() {
+            const navbar = document.querySelector('.navbar');
+            const heroSection = document.querySelector('.hero-section');
+            const heroBottom = heroSection.offsetTop + heroSection.offsetHeight - 50;
+
+            if (window.scrollY >= heroBottom) {
+                navbar.classList.remove('navbar-transparent');
+                navbar.classList.add('navbar-dark-bg');
+            } else {
+                navbar.classList.add('navbar-transparent');
+                navbar.classList.remove('navbar-dark-bg');
+            }
+        });
     document.addEventListener('DOMContentLoaded', function() {
         const checkInInput = document.getElementById('check_in');
         const checkOutInput = document.getElementById('check_out');

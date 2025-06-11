@@ -10,14 +10,6 @@ while ($row = mysqli_fetch_assoc($result)) {
     $featured_hotels[] = $row;
 }
 
-// Fetch all hotels
-$all_hotels = [];
-$sql = "SELECT * FROM hotels ORDER BY name ASC";
-$result = mysqli_query($conn, $sql);
-while ($row = mysqli_fetch_assoc($result)) {
-    $all_hotels[] = $row;
-}
-
 // Fetch room categories
 $room_categories = [];
 $sql = "SELECT DISTINCT room_type, MIN(price_per_night) as min_price, MAX(price_per_night) as max_price 
@@ -233,14 +225,23 @@ $check_out = isset($_GET['check_out']) ? $_GET['check_out'] : date('Y-m-d 12:00'
                 </button>
                 <div class="collapse navbar-collapse" id="navbarNav">
                     <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                            <a class="nav-link" href="index.php">Home</a>
+                        </li>
                         <li class="nav-item">
                             <a class="nav-link" href="room-list.php">Rooms</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="#features">Features</a>
+                            <a class="nav-link" href="hotels.php">Hotels</a>
                         </li>
-                        <li class="nav-item">   
-                            <a class="nav-link" href="#contact">Contact</a>
+                        <li class="nav-item">
+                            <a class="nav-link" href="about.php">About Us</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="gallery.php">Gallery</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="#contact">Contact Us</a>
                         </li>
                         <?php if (isLoggedIn()): ?>
                             <li class="nav-item dropdown">
@@ -365,6 +366,34 @@ $check_out = isset($_GET['check_out']) ? $_GET['check_out'] : date('Y-m-d 12:00'
         </div>
     </section>
 
+
+
+       <!-- About Section -->
+       <section class="section-padding">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-6 mb-4">
+                    <h2>Our Story</h2>
+                    <p>Jhang Hotels was founded in 2010 with a vision to redefine luxury hospitality in Jhang, Pakistan. Our journey began with a single property, and today we are proud to offer a collection of premium hotels that blend modern elegance with the rich cultural heritage of the region.</p>
+                    <p>Our commitment to excellence has earned us a reputation for unparalleled service, making us the preferred choice for travelers seeking comfort and sophistication.</p>
+                </div>
+                <div class="col-lg-6 mb-4">
+                    <img src="https://images.unsplash.com/photo-1578683010236-d716f9a3f461?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80" class="img-fluid rounded" alt="Hotel Interior">
+                </div>
+            </div>
+            <div class="row mt-5">
+                <div class="col-lg-6 mb-4">
+                    <h2>Our Mission</h2>
+                    <p>To provide exceptional hospitality experiences that exceed guest expectations, fostering memorable stays through personalized service, world-class amenities, and a deep respect for our local community.</p>
+                </div>
+                <div class="col-lg-6 mb-4">
+                    <h2>Our Vision</h2>
+                    <p>To be the leading luxury hotel brand in Pakistan, setting the standard for hospitality by creating unique, culturally inspired experiences that resonate with guests from around the world.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- Featured Hotels Section -->
     <section class="section-padding bg-light" id="hotels">
         <div class="container">
@@ -386,35 +415,8 @@ $check_out = isset($_GET['check_out']) ? $_GET['check_out'] : date('Y-m-d 12:00'
                 </div>
                 <?php endforeach; ?>
             </div>
-        </div>
-    </section>
-
-    <!-- All Hotels Section -->
-    <section class="section-padding" id="all-hotels">
-        <div class="container">
-            <h2 class="text-center mb-5">All Hotels</h2>
-            <div class="row">
-                <?php if (empty($all_hotels)): ?>
-                    <div class="col-12 text-center">
-                        <p class="text-muted">No hotels available at the moment.</p>
-                    </div>
-                <?php else: ?>
-                    <?php foreach ($all_hotels as $hotel): ?>
-                    <div class="col-md-4 mb-4">
-                        <div class="card">
-                            <img src="<?php echo htmlspecialchars($hotel['image_url']); ?>" class="card-img-top" alt="<?php echo htmlspecialchars($hotel['name']); ?>">
-                            <div class="card-body">
-                                <h5 class="card-title"><?php echo htmlspecialchars($hotel['name']); ?></h5>
-                                <p class="card-text"><?php echo htmlspecialchars($hotel['description']); ?></p>
-                                <p class="card-text">
-                                    <i class="fas fa-map-marker-alt"></i> <?php echo htmlspecialchars($hotel['city']); ?>
-                                </p>
-                                <a href="room-list.php?hotel=<?php echo $hotel['id']; ?>" class="btn btn-custom">View Rooms</a>
-                            </div>
-                        </div>
-                    </div>
-                    <?php endforeach; ?>
-                <?php endif; ?>
+            <div class="text-center mt-4">
+                <a href="hotels.php" class="btn btn-custom btn-lg">View All Hotels</a>
             </div>
         </div>
     </section>
@@ -520,9 +522,10 @@ $check_out = isset($_GET['check_out']) ? $_GET['check_out'] : date('Y-m-d 12:00'
                 <div class="col-md-4">
                     <h5>Quick Links</h5>
                     <ul class="list-unstyled">
-                        <li><a href="room-list.php" class="text-white">Rooms</a></li>
-                        <li><a href="#features" class="text-white">Features</a></li>
-                        <li><a href="#contact" class="text-white">Contact</a></li>
+                        <li><a href="room-list.php" class="text-white text-decoration-none">Rooms</a></li>
+                        <li><a href="about.php" class="text-white text-decoration-none">About Us</a></li>
+                        <li><a href="gallery.php" class="text-white text-decoration-none">Gallery</a></li>
+                        <li><a href="index.php#contact" class="text-white text-decoration-none">Contact Us</a></li>
                     </ul>
                 </div>
                 <div class="col-md-4">
