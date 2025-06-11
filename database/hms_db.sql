@@ -1,3 +1,31 @@
+-- phpMyAdmin SQL Dump
+-- version 5.2.1
+-- https://www.phpmyadmin.net/
+--
+-- Host: 127.0.0.1
+-- Generation Time: May 30, 2025 at 03:39 AM
+-- Server version: 10.4.32-MariaDB
+-- PHP Version: 8.2.12
+
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+START TRANSACTION;
+SET time_zone = "+00:00";
+
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8mb4 */;
+
+--
+-- Database: `hms_db`
+--
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `bookings`
+--
 
 CREATE TABLE `bookings` (
   `id` int(11) NOT NULL,
@@ -15,6 +43,16 @@ CREATE TABLE `bookings` (
   `check_in` datetime DEFAULT NULL,
   `check_out` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `bookings`
+--
+
+INSERT INTO `bookings` (`id`, `user_id`, `hotel_id`, `room_id`, `check_in_date`, `check_out_date`, `adults`, `children`, `total_price`, `booking_status`, `created_at`, `status`, `check_in`, `check_out`) VALUES
+(1, 5, 1, 1, '2025-05-26 13:41:00', '2025-05-26 16:41:00', 3, 1, 600.00, 'pending', '2025-05-27 04:38:53', 'pending', NULL, NULL),
+(2, 5, 2, 4, '2025-05-25 11:29:00', '2025-05-25 16:29:00', 3, 1, 1000.00, 'confirmed', '2025-05-27 04:38:53', 'confirmed', '2025-05-25 11:29:00', '2025-05-25 16:29:00');
+
+-- --------------------------------------------------------
 
 --
 -- Table structure for table `hotels`
@@ -36,6 +74,16 @@ CREATE TABLE `hotels` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
+-- Dumping data for table `hotels`
+--
+
+INSERT INTO `hotels` (`id`, `name`, `description`, `address`, `city`, `phone`, `email`, `website`, `image_url`, `created_at`, `updated_at`, `vendor_id`) VALUES
+(1, 'Ali Hotel No. 1', 'A luxurious hotel in Jhang owned by Ali.', '1010 St, Jhang', 'Jhang', '0300000101', 'alihotelno.1@jhanghotels.com', 'www.alihotelno.1.com', 'includes/images/ali_hotel_no._1.jpg', '0000-00-00 00:00:00', '2025-05-27 04:38:53', 1),
+(2, 'Zainab Hotel No. 1', 'A luxurious hotel in Jhang owned by Zainab.', '2010 St, Jhang', 'Jhang', '0300000201', 'zainabhotelno.1@jhanghotels.com', 'www.zainabhotelno.1.com', 'includes/images/zainab_hotel_no._1.jpg', '0000-00-00 00:00:00', '2025-05-27 04:38:53', 2);
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `rooms`
 --
 
@@ -54,6 +102,18 @@ CREATE TABLE `rooms` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
+-- Dumping data for table `rooms`
+--
+
+INSERT INTO `rooms` (`id`, `hotel_id`, `room_type`, `description`, `price_per_night`, `capacity`, `image_url`, `amenities`, `status`, `created_at`, `updated_at`) VALUES
+(1, 1, 'standard', 'standard room in Ali Hotel No. 1.', 4800.00, 2, 'includes/images/room_standard_1_1.jpg', 'WiFi, TV, AC', 'available', '2025-05-27 04:38:53', '2025-05-27 04:41:04'),
+(2, 1, 'deluxe', 'deluxe room in Ali Hotel No. 1.', 7200.00, 3, 'includes/images/room_deluxe_1_2.jpg', 'WiFi, TV, AC, Minibar', 'available', '2025-05-27 04:38:53', '2025-05-27 04:43:08'),
+(3, 2, 'standard', 'standard room in Zainab Hotel No. 1.', 4800.00, 2, 'includes/images/room_standard_2_1.jpg', 'WiFi, TV, AC', '', '2025-05-27 04:38:53', '2025-05-27 04:38:53'),
+(4, 2, 'deluxe', 'deluxe room in Zainab Hotel No. 1.', 7200.00, 3, 'includes/images/room_deluxe_2_2.jpg', 'WiFi, TV, AC, Minibar', '', '2025-05-27 04:38:53', '2025-05-27 04:38:53');
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `users`
 --
 
@@ -67,5 +127,109 @@ CREATE TABLE `users` (
   `first_name` varchar(50) NOT NULL,
   `last_name` varchar(50) NOT NULL,
   `phone` varchar(20) DEFAULT NULL,
-  `address` text DEFAULT NULL
+  `address` text DEFAULT NULL,
+  `vendor_id` int(11) NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `users`
+--
+
+INSERT INTO `users` (`id`, `username`, `email`, `password`, `role`, `created_at`, `first_name`, `last_name`, `phone`, `address`, `vendor_id`) VALUES
+(1, 'admin1', 'admin1@jhanghotels.com', '$2y$10$vWs6QJ7nVuzUMt/YNzqXfO/81d41A2yIiEKohP.4zmhL6GYm77odS', 'admin', '2025-05-27 04:38:53', 'Ali', 'Hassan', '03001234567', 'Jhang, Punjab, Pakistan', 0),
+(2, 'admin2', 'admin2@jhanghotels.com', '$2y$10$7rAI1.3IYUCXc2DZSI/rDeOLdxotDlN.PG7.jFyvKIldBsN0pteXK', 'admin', '2025-05-27 04:38:53', 'Zainab', 'Khan', '03001234568', 'Jhang, Punjab, Pakistan', 0),
+(3, 'user1', 'user1@jhanghotels.com', '$2y$10$ItbdF9RUjQa9xwDtPjJZw.zd9NcWEE9Z3l.yqcle7zRcp5HQHoz5y', 'user', '2025-05-27 04:38:53', 'Ahmed', 'Khan', '03111234567', '123 Main St, Jhang', 0),
+(4, 'user2', 'user2@jhanghotels.com', '$2y$10$PtLab4G5FXAEHVersk91JOi4wtC38tvsBbhyHl9WCtuc3eNLGOd76', 'user', '2025-05-27 04:38:53', 'Sara', 'Malik', '03211234567', '456 Garden Rd, Jhang', 0),
+(5, 'user3', 'user3@jhanghotels.com', '$2y$10$ZAu/yLhUqqDRusv5dobMU.gWDOuye4UFW741o86qv/PdBiMJa.XSi', 'user', '2025-05-27 04:38:53', 'Usman', 'Riaz', '03311234567', '789 Park Ave, Jhang', 0);
+
+--
+-- Indexes for dumped tables
+--
+
+--
+-- Indexes for table `bookings`
+--
+ALTER TABLE `bookings`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `user_id` (`user_id`),
+  ADD KEY `hotel_id` (`hotel_id`),
+  ADD KEY `room_id` (`room_id`);
+
+--
+-- Indexes for table `hotels`
+--
+ALTER TABLE `hotels`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_vendor_id` (`vendor_id`);
+
+--
+-- Indexes for table `rooms`
+--
+ALTER TABLE `rooms`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `hotel_id` (`hotel_id`);
+
+--
+-- Indexes for table `users`
+--
+ALTER TABLE `users`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `username` (`username`),
+  ADD UNIQUE KEY `email` (`email`);
+
+--
+-- AUTO_INCREMENT for dumped tables
+--
+
+--
+-- AUTO_INCREMENT for table `bookings`
+--
+ALTER TABLE `bookings`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=33;
+
+--
+-- AUTO_INCREMENT for table `hotels`
+--
+ALTER TABLE `hotels`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+
+--
+-- AUTO_INCREMENT for table `rooms`
+--
+ALTER TABLE `rooms`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=65;
+
+--
+-- AUTO_INCREMENT for table `users`
+--
+ALTER TABLE `users`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+
+--
+-- Constraints for dumped tables
+--
+
+--
+-- Constraints for table `bookings`
+--
+ALTER TABLE `bookings`
+  ADD CONSTRAINT `bookings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
+  ADD CONSTRAINT `bookings_ibfk_2` FOREIGN KEY (`hotel_id`) REFERENCES `hotels` (`id`),
+  ADD CONSTRAINT `bookings_ibfk_3` FOREIGN KEY (`room_id`) REFERENCES `rooms` (`id`);
+
+--
+-- Constraints for table `hotels`
+--
+ALTER TABLE `hotels`
+  ADD CONSTRAINT `fk_vendor_id` FOREIGN KEY (`vendor_id`) REFERENCES `users` (`id`);
+
+--
+-- Constraints for table `rooms`
+--
+ALTER TABLE `rooms`
+  ADD CONSTRAINT `rooms_ibfk_1` FOREIGN KEY (`hotel_id`) REFERENCES `hotels` (`id`) ON DELETE CASCADE;
+COMMIT;
+
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;

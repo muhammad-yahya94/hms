@@ -130,57 +130,57 @@ mysqli_stmt_bind_param($stmt, "i", $user_id);
 mysqli_stmt_execute($stmt);
 $recent_bookings = mysqli_stmt_get_result($stmt) ?: [];
 
-// Revenue Analytics (last 6 months) for current admin's hotels
-$stmt = mysqli_prepare($conn, "
-    SELECT 
-        DATE_FORMAT(b.check_in_date, '%Y-%m') as month,
-        SUM(b.total_price) as total_revenue
-    FROM bookings b 
-    JOIN rooms r ON b.room_id = r.id 
-    JOIN hotels h ON b.hotel_id = h.id 
-    WHERE h.vendor_id = ? AND b.check_in_date <= NOW() AND b.booking_status = 'confirmed'
-    GROUP BY DATE_FORMAT(b.check_in_date, '%Y-%m')
-    ORDER BY month DESC 
-    LIMIT 6
-");
-mysqli_stmt_bind_param($stmt, "i", $user_id);
-mysqli_stmt_execute($stmt);
-$revenue_query = mysqli_stmt_get_result($stmt) ?: [];
+// // Revenue Analytics (last 6 months) for current admin's hotels
+// $stmt = mysqli_prepare($conn, "
+//     SELECT 
+//         DATE_FORMAT(b.check_in_date, '%Y-%m') as month,
+//         SUM(b.total_price) as total_revenue
+//     FROM bookings b 
+//     JOIN rooms r ON b.room_id = r.id 
+//     JOIN hotels h ON b.hotel_id = h.id 
+//     WHERE h.vendor_id = ? AND b.check_in_date <= NOW() AND b.booking_status = 'confirmed'
+//     GROUP BY DATE_FORMAT(b.check_in_date, '%Y-%m')
+//     ORDER BY month DESC 
+//     LIMIT 6
+// ");
+// mysqli_stmt_bind_param($stmt, "i", $user_id);
+// mysqli_stmt_execute($stmt);
+// $revenue_query = mysqli_stmt_get_result($stmt) ?: [];
 
-// Prepare revenue data for the chart
-$chartData = [];
-$months = [];
-$currentDate = new DateTime('2025-05-26 18:15:00'); // Current date and time: 06:15 PM PKT, May 26, 2025
-for ($i = 0; $i < 6; $i++) {
-    $monthKey = $currentDate->format('Y-m');
-    $months[$i] = $currentDate->format('M Y');
-    $chartData[$i] = 0;
-    $currentDate->modify('-1 month');
-}
+// // Prepare revenue data for the chart
+// $chartData = [];
+// $months = [];
+// $currentDate = new DateTime('2025-05-26 18:15:00'); // Current date and time: 06:15 PM PKT, May 26, 2025
+// for ($i = 0; $i < 6; $i++) {
+//     $monthKey = $currentDate->format('Y-m');
+//     $months[$i] = $currentDate->format('M Y');
+//     $chartData[$i] = 0;
+//     $currentDate->modify('-1 month');
+// }
 
-if (mysqli_num_rows($revenue_query) > 0) {
-    while ($row = mysqli_fetch_assoc($revenue_query)) {
-        $monthKey = $row['month'];
-        $index = array_search($monthKey, array_column($revenueData, 'month'));
-        if ($index !== false) {
-            $chartData[$index] = (float)($row['total_revenue'] ?? 0);
-        }
-    }
-}
+// if (mysqli_num_rows($revenue_query) > 0) {
+//     while ($row = mysqli_fetch_assoc($revenue_query)) {
+//         $monthKey = $row['month'];
+//         $index = array_search($monthKey, array_column($revenueData, 'month'));
+//         if ($index !== false) {
+//             $chartData[$index] = (float)($row['total_revenue'] ?? 0);
+//         }
+//     }
+// }
 
-$revenueData = [];
-for ($i = 0; $i < 6; $i++) {
-    $revenueData[] = [
-        'month' => $months[$i],
-        'revenue' => $chartData[$i]
-    ];
-}
-$revenueData = array_reverse($revenueData); // Oldest to newest for chart
+// $revenueData = [];
+// for ($i = 0; $i < 6; $i++) {
+//     $revenueData[] = [
+//         'month' => $months[$i],
+//         'revenue' => $chartData[$i]
+//     ];
+// }
+// $revenueData = array_reverse($revenueData); // Oldest to newest for chart
 
-// Generate revenue chart data
-$labels = array_column($revenueData, 'month');
-$revenues = array_column($revenueData, 'revenue');
-?>
+// // Generate revenue chart data
+// $labels = array_column($revenueData, 'month');
+// $revenues = array_column($revenueData, 'revenue');
+// ?>
 
 <!DOCTYPE html>
 <html lang="en">

@@ -1,7 +1,7 @@
 <?php
 require_once '../config/database.php';
 
-// Set timezone to Pakistan Standard Time (PKT)
+// Set timezone to Pakistan Standard Time (PKT)   
 date_default_timezone_set('Asia/Karachi');
 
 // Get current date and time dynamically (e.g., 2025-05-27 09:37:00 at 09:37 AM PKT)

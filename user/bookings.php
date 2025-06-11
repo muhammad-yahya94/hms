@@ -315,7 +315,7 @@ $bookings = mysqli_stmt_get_result($stmt);
                                 <div class="col-md-9">
                                     <div class="d-flex justify-content-between align-items-start">
                                         <div>
-                                            <h4><?php echo htmlspecialchars($booking['room_type']); ?></h4>
+                                            <h4><?php echo htmlspecialchars($booking['room_type']) . ' (Room #' . htmlspecialchars($booking['room_id']) . ')'; ?></h4>
                                             <span class="status-badge status-<?php echo strtolower($booking['booking_status']); ?>">
                                                 <?php echo ucfirst($booking['booking_status']); ?>
                                             </span>
