@@ -422,10 +422,10 @@ if (isset($_GET['edit'])) {
                                         <a href="?edit=<?php echo $hotel['id']; ?>" class="btn btn-sm btn-custom">
                                             <i class="fas fa-edit"></i> Edit
                                         </a>
-                                        <a href="?delete=<?php echo $hotel['id']; ?>" class="btn btn-sm btn-danger-custom" 
+                                        <!-- <a href="?delete=<?php echo $hotel['id']; ?>" class="btn btn-sm btn-danger-custom" 
                                            onclick="return confirm('Are you sure you want to delete this hotel?')">
                                             <i class="fas fa-trash"></i> Delete
-                                        </a>
+                                        </a> -->
                                     </div>
                                 </div>
                             </div>

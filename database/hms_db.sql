@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 11, 2025 at 02:08 PM
+-- Generation Time: Jun 14, 2025 at 04:33 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -183,6 +183,7 @@ CREATE TABLE `users` (
   `last_name` varchar(50) NOT NULL,
   `phone` varchar(20) DEFAULT NULL,
   `address` text DEFAULT NULL,
+  `profile_image` varchar(255) DEFAULT NULL,
   `vendor_id` int(11) NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -190,12 +191,13 @@ CREATE TABLE `users` (
 -- Dumping data for table `users`
 --
 
-INSERT INTO `users` (`id`, `username`, `email`, `password`, `role`, `created_at`, `first_name`, `last_name`, `phone`, `address`, `vendor_id`) VALUES
-(1, 'admin1', 'admin1@jhanghotels.com', '$2y$10$vWs6QJ7nVuzUMt/YNzqXfO/81d41A2yIiEKohP.4zmhL6GYm77odS', 'admin', '2025-05-27 04:38:53', 'Ali', 'Hassan', '03001234567', 'Jhang, Punjab, Pakistan', 0),
-(2, 'admin2', 'admin2@jhanghotels.com', '$2y$10$7rAI1.3IYUCXc2DZSI/rDeOLdxotDlN.PG7.jFyvKIldBsN0pteXK', 'admin', '2025-05-27 04:38:53', 'Zainab', 'Khan', '03001234568', 'Jhang, Punjab, Pakistan', 0),
-(3, 'user1', 'user1@jhanghotels.com', '$2y$10$ItbdF9RUjQa9xwDtPjJZw.zd9NcWEE9Z3l.yqcle7zRcp5HQHoz5y', 'user', '2025-05-27 04:38:53', 'Ahmed', 'Khan', '03111234567', '123 Main St, Jhang', 0),
-(4, 'user2', 'user2@jhanghotels.com', '$2y$10$PtLab4G5FXAEHVersk91JOi4wtC38tvsBbhyHl9WCtuc3eNLGOd76', 'user', '2025-05-27 04:38:53', 'Sara', 'Malik', '03211234567', '456 Garden Rd, Jhang', 0),
-(5, 'user3', 'user3@jhanghotels.com', '$2y$10$ZAu/yLhUqqDRusv5dobMU.gWDOuye4UFW741o86qv/PdBiMJa.XSi', 'user', '2025-05-27 04:38:53', 'Usman', 'Riaz', '03311234567', '789 Park Ave, Jhang', 0);
+INSERT INTO `users` (`id`, `username`, `email`, `password`, `role`, `created_at`, `first_name`, `last_name`, `phone`, `address`, `profile_image`, `vendor_id`) VALUES
+(1, 'admin1', 'admin1@jhanghotels.com', '$2y$10$vWs6QJ7nVuzUMt/YNzqXfO/81d41A2yIiEKohP.4zmhL6GYm77odS', 'admin', '2025-05-27 04:38:53', 'Ali', 'Hassan', '03001234567', 'Jhang, Punjab, Pakistan', NULL, 0),
+(2, 'admin2', 'admin2@jhanghotels.com', '$2y$10$7rAI1.3IYUCXc2DZSI/rDeOLdxotDlN.PG7.jFyvKIldBsN0pteXK', 'admin', '2025-05-27 04:38:53', 'Zainab', 'Khan', '03001234568', 'Jhang, Punjab, Pakistan', NULL, 0),
+(3, 'user1', 'user1@jhanghotels.com', '$2y$10$ItbdF9RUjQa9xwDtPjJZw.zd9NcWEE9Z3l.yqcle7zRcp5HQHoz5y', 'user', '2025-05-27 04:38:53', 'Ahmed', 'Khan', '03111234567', '123 Main St, Jhang', NULL, 0),
+(4, 'user2', 'user2@jhanghotels.com', '$2y$10$PtLab4G5FXAEHVersk91JOi4wtC38tvsBbhyHl9WCtuc3eNLGOd76', 'user', '2025-05-27 04:38:53', 'Sara', 'Malik', '03211234567', '456 Garden Rd, Jhang', NULL, 0),
+(5, 'user3', 'user3@jhanghotels.com', '$2y$10$ZAu/yLhUqqDRusv5dobMU.gWDOuye4UFW741o86qv/PdBiMJa.XSi', 'user', '2025-05-27 04:38:53', 'Usman', 'Riaz', '03311234567', '789 Park Ave, Jhang', NULL, 0),
+(15, 'muhammadyahya', 'muhammadyahya6272@gmail.com', '$2y$10$Wgtl5yYV8NLNUD7QggwI2e6e.FQ79YevaAX0wncl9JVjx9JqFk.7.', 'user', '2025-06-14 02:15:41', 'Muhammad', 'yahya', '0345 9174968', 'jhang', '../uploads/Screenshot 2025-06-11 103044.jpg', 0);
 
 --
 -- Indexes for dumped tables
@@ -286,7 +288,7 @@ ALTER TABLE `rooms`
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- Constraints for dumped tables

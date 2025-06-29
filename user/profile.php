@@ -8,82 +8,128 @@ requireLogin();
 // Get user data
 $user = getUserData();
 
-$error = '';
-$success = '';
+$error_profile = '';
+$success_profile = '';
+$error_password = '';
+$success_password = '';
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $username = trim($_POST['username']);
-    $email = trim($_POST['email']);
-    $current_password = $_POST['current_password'];
-    $new_password = $_POST['new_password'];
-    $confirm_password = $_POST['confirm_password'];
-    
-    // Validation
-    if (empty($username) || empty($email)) {
-        $error = "Username and email are required.";
-    } else {
-        // Check if username exists (excluding current user)
-        $sql = "SELECT id FROM users WHERE username = ? AND id != ?";
-        $stmt = mysqli_prepare($conn, $sql);
-        mysqli_stmt_bind_param($stmt, "si", $username, $user['id']);
-        mysqli_stmt_execute($stmt);
-        mysqli_stmt_store_result($stmt);
+    // Handle profile update
+    if (isset($_POST['update_profile'])) {
+        $username = trim($_POST['username']);
+        $email = trim($_POST['email']);
         
-        if (mysqli_stmt_num_rows($stmt) > 0) {
-            $error = "Username already exists.";
+        // Validation
+        if (empty($username) || empty($email)) {
+            $error_profile = "Username and email are required.";
         } else {
-            // Check if email exists (excluding current user)
-            $sql = "SELECT id FROM users WHERE email = ? AND id != ?";
+            // Check if username exists (excluding current user)
+            $sql = "SELECT id FROM users WHERE username = ? AND id != ?";
             $stmt = mysqli_prepare($conn, $sql);
-            mysqli_stmt_bind_param($stmt, "si", $email, $user['id']);
+            mysqli_stmt_bind_param($stmt, "si", $username, $user['id']);
             mysqli_stmt_execute($stmt);
             mysqli_stmt_store_result($stmt);
             
             if (mysqli_stmt_num_rows($stmt) > 0) {
-                $error = "Email already exists.";
+                $error_profile = "Username already exists.";
             } else {
-                // If changing password
-                if (!empty($current_password)) {
-                    // Verify current password
-                    $sql = "SELECT password FROM users WHERE id = ?";
-                    $stmt = mysqli_prepare($conn, $sql);
-                    mysqli_stmt_bind_param($stmt, "i", $user['id']);
-                    mysqli_stmt_execute($stmt);
-                    $result = mysqli_stmt_get_result($stmt);
-                    $user_data = mysqli_fetch_assoc($result);
-                    
-                    if (!password_verify($current_password, $user_data['password'])) {
-                        $error = "Current password is incorrect.";
-                    } elseif (empty($new_password) || empty($confirm_password)) {
-                        $error = "New password and confirmation are required.";
-                    } elseif ($new_password !== $confirm_password) {
-                        $error = "New passwords do not match.";
-                    } elseif (strlen($new_password) < 6) {
-                        $error = "New password must be at least 6 characters long.";
-                    } else {
-                        // Update with new password
-                        $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
-                        $sql = "UPDATE users SET username = ?, email = ?, password = ? WHERE id = ?";
-                        $stmt = mysqli_prepare($conn, $sql);
-                        mysqli_stmt_bind_param($stmt, "sssi", $username, $email, $hashed_password, $user['id']);
-                    }
-                } else {
-                    // Update without changing password
-                    $sql = "UPDATE users SET username = ?, email = ? WHERE id = ?";
-                    $stmt = mysqli_prepare($conn, $sql);
-                    mysqli_stmt_bind_param($stmt, "ssi", $username, $email, $user['id']);
-                }
+                // Check if email exists (excluding current user)
+                $sql = "SELECT id FROM users WHERE email = ? AND id != ?";
+                $stmt = mysqli_prepare($conn, $sql);
+                mysqli_stmt_bind_param($stmt, "si", $email, $user['id']);
+                mysqli_stmt_execute($stmt);
+                mysqli_stmt_store_result($stmt);
                 
-                if (!isset($error) && mysqli_stmt_execute($stmt)) {
-                    $success = "Profile updated successfully.";
-                    // Update session username
-                    $_SESSION['username'] = $username;
-                    // Refresh user data
-                    $user = getUserData();
+                if (mysqli_stmt_num_rows($stmt) > 0) {
+                    $error_profile = "Email already exists.";
                 } else {
-                    $error = "Something went wrong. Please try again later.";
+                    // Update profile without password
+                    $phone = !empty($_POST['phone']) ? trim($_POST['phone']) : '';
+                    $address = !empty($_POST['address']) ? trim($_POST['address']) : '';
+                    $profile_image = $user['profile_image']; // Default to existing image if no new upload
+                    
+                    // Handle profile image upload if provided
+                    if (!empty($_FILES['profile_image']['name'])) {
+                        $target_dir = "../uploads/";
+                        $target_file = $target_dir . basename($_FILES['profile_image']['name']);
+                        $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
+                        $allowed_types = ['jpg', 'jpeg', 'png', 'gif'];
+                        
+                        // Validate file
+                        if (!in_array($imageFileType, $allowed_types)) {
+                            $error_profile = "Only JPG, JPEG, PNG, and GIF files are allowed.";
+                        } elseif ($_FILES['profile_image']['size'] > 500000) { // 500KB limit
+                            $error_profile = "File size must be less than 500KB.";
+                        } elseif (!getimagesize($_FILES['profile_image']['tmp_name'])) {
+                            $error_profile = "File is not a valid image.";
+                        } else {
+                            if (move_uploaded_file($_FILES['profile_image']['tmp_name'], $target_file)) {
+                                $profile_image = $target_file; // Update with new image path
+                            } else {
+                                $error_profile = "Error uploading profile image.";
+                            }
+                        }
+                    }
+                    
+                    if (empty($error_profile)) {
+                        $sql = "UPDATE users SET username = ?, email = ?, phone = ?, address = ?, profile_image = ? WHERE id = ?";
+                        $stmt = mysqli_prepare($conn, $sql);
+                        mysqli_stmt_bind_param($stmt, "sssssi", $username, $email, $phone, $address, $profile_image, $user['id']);
+                        
+                        if (mysqli_stmt_execute($stmt)) {
+                            $success_profile = "Profile updated successfully.";
+                            // Update session username
+                            $_SESSION['username'] = $username;
+                            // Refresh user data
+                            $user = getUserData();
+                        } else {
+                            $error_profile = "Something went wrong. Please try again later: " . mysqli_error($conn);
+                        }
+                    }
                 }
             }
+        }
+    }
+
+    // Handle password update
+    if (isset($_POST['update_password'])) {
+        $current_password = !empty($_POST['current_password']) ? trim($_POST['current_password']) : '';
+        $new_password = !empty($_POST['new_password']) ? trim($_POST['new_password']) : '';
+        $confirm_password = !empty($_POST['confirm_password']) ? trim($_POST['confirm_password']) : '';
+        
+        // Validation
+        if (!empty($current_password) || !empty($new_password) || !empty($confirm_password)) {
+            // Verify current password
+            $sql = "SELECT password FROM users WHERE id = ?";
+            $stmt = mysqli_prepare($conn, $sql);
+            mysqli_stmt_bind_param($stmt, "i", $user['id']);
+            mysqli_stmt_execute($stmt);
+            $result = mysqli_stmt_get_result($stmt);
+            $user_data = mysqli_fetch_assoc($result);
+            
+            if (!password_verify($current_password, $user_data['password'])) {
+                $error_password = "Current password is incorrect.";
+            } elseif (empty($new_password) || empty($confirm_password)) {
+                $error_password = "New password and confirmation are required.";
+            } elseif ($new_password !== $confirm_password) {
+                $error_password = "New passwords do not match.";
+            } elseif (strlen($new_password) < 6) {
+                $error_password = "New password must be at least 6 characters long.";
+            } else {
+                // Update with new password
+                $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
+                $sql = "UPDATE users SET password = ? WHERE id = ?";
+                $stmt = mysqli_prepare($conn, $sql);
+                mysqli_stmt_bind_param($stmt, "si", $hashed_password, $user['id']);
+                
+                if (mysqli_stmt_execute($stmt)) {
+                    $success_password = "Password updated successfully.";
+                } else {
+                    $error_password = "Something went wrong. Please try again later: " . mysqli_error($conn);
+                }
+            }
+        } else {
+            $error_password = "Please fill in all password fields to change your password.";
         }
     }
 }
@@ -231,12 +277,18 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <div class="col-md-9 col-lg-10 main-content">
                 <h2 class="mb-4">My Profile</h2>
                 
-                <?php if ($error): ?>
-                    <div class="alert alert-danger"><?php echo $error; ?></div>
+                <?php if ($error_profile): ?>
+                    <div class="alert alert-danger"><?php echo $error_profile; ?></div>
+                <?php endif; ?>
+                <?php if ($success_profile): ?>
+                    <div class="alert alert-success"><?php echo $success_profile; ?></div>
                 <?php endif; ?>
                 
-                <?php if ($success): ?>
-                    <div class="alert alert-success"><?php echo $success; ?></div>
+                <?php if ($error_password): ?>
+                    <div class="alert alert-danger"><?php echo $error_password; ?></div>
+                <?php endif; ?>
+                <?php if ($success_password): ?>
+                    <div class="alert alert-success"><?php echo $success_password; ?></div>
                 <?php endif; ?>
                 
                 <div class="profile-card">
@@ -264,6 +316,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                         </p>
                     </div>
                     
+                    <!-- Profile Update Form -->
                     <form method="POST" action="" enctype="multipart/form-data">
                         <div class="row">
                             <div class="col-md-6 mb-3">
@@ -287,17 +340,6 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             </div>
                         </div>
                         
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="current_password" class="form-label">Current Password</label>
-                                <input type="password" class="form-control" id="current_password" name="current_password">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="new_password" class="form-label">New Password</label>
-                                <input type="password" class="form-control" id="new_password" name="new_password">
-                            </div>
-                        </div>
-                        
                         <div class="mb-3">
                             <label for="profile_image" class="form-label">Profile Picture</label>
                             <input type="file" class="form-control" id="profile_image" name="profile_image" accept="image/*">
@@ -309,6 +351,30 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
                             </button>
                         </div>
                     </form>
+                    
+                    <!-- Password Update Form -->
+                    <form method="POST" action="" class="mt-5">
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label for="current_password" class="form-label">Current Password</label>
+                                <input type="password" class="form-control" id="current_password" name="current_password">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="new_password" class="form-label">New Password</label>
+                                <input type="password" class="form-control" id="new_password" name="new_password">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="confirm_password" class="form-label">Confirm New Password</label>
+                                <input type="password" class="form-control" id="confirm_password" name="confirm_password">
+                            </div>
+                        </div>
+                        
+                        <div class="text-center">
+                            <button type="submit" name="update_password" class="btn btn-custom">
+                                <i class="fas fa-lock"></i> Update Password
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
@@ -317,4 +383,4 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
-</html> 
+</html>
