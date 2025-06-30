@@ -211,6 +211,15 @@ $check_out = isset($_GET['check_out']) ? $_GET['check_out'] : date('Y-m-d 12:00'
             color: #d4a017;
             font-weight: 600;
         }
+        .hotel-rating {
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+        .hotel-rating .fa-star,
+        .hotel-rating .fa-star-half-alt {
+            color: #ffc107;
+            margin-right: 1px;
+        }
     </style>
 </head>
 <body>
@@ -404,9 +413,29 @@ $check_out = isset($_GET['check_out']) ? $_GET['check_out'] : date('Y-m-d 12:00'
                     <div class="card">
                         <img src="<?php echo htmlspecialchars($hotel['image_url']); ?>" class="card-img-top" alt="<?php echo htmlspecialchars($hotel['name']); ?>">
                         <div class="card-body">
-                            <h5 class="card-title"><?php echo htmlspecialchars($hotel['name']); ?></h5>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h5 class="card-title mb-0"><?php echo htmlspecialchars($hotel['name']); ?></h5>
+                                <?php if (!empty($hotel['average_rating'])): ?>
+                                    <div class="hotel-rating">
+                                        <span class="text-warning">
+                                            <?php 
+                                            $rating = round($hotel['average_rating'] * 2) / 2; // Round to nearest 0.5
+                                            for ($i = 1; $i <= 5; $i++): 
+                                                if ($i <= floor($rating)): ?>
+                                                    <i class="fas fa-star"></i>
+                                                <?php elseif ($i - 0.5 <= $rating && $rating < $i): ?>
+                                                    <i class="fas fa-star-half-alt"></i>
+                                                <?php else: ?>
+                                                    <i class="far fa-star"></i>
+                                                <?php endif; ?>
+                                            <?php endfor; ?>
+                                            <span class="text-muted small">(<?php echo number_format($hotel['average_rating'], 1); ?>)</span>
+                                        </span>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
                             <p class="card-text"><?php echo htmlspecialchars($hotel['description']); ?></p>
-                            <p class="card-text">
+                            <p class="card-text mb-3">
                                 <i class="fas fa-map-marker-alt"></i> <?php echo htmlspecialchars($hotel['city']); ?>
                             </p>
                             <a href="room-list.php?hotel=<?php echo $hotel['id']; ?>" class="btn btn-custom">View Rooms</a>

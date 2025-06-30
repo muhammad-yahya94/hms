@@ -13,7 +13,7 @@ $max_price = isset($_GET['max_price']) && $_GET['max_price'] !== '' ? (float)$_G
 $hotel_id = isset($_GET['hotel']) ? (int)$_GET['hotel'] : 0;
 
 // Build the SQL query
-$sql = "SELECT r.*, h.name as hotel_name, h.city, h.address, h.image_url as hotel_image,
+$sql = "SELECT r.*, h.name as hotel_name, h.city, h.address, h.image_url as hotel_image, h.average_rating,
         CASE 
             WHEN r.status = 'available' AND EXISTS (
                 SELECT 1 FROM bookings b 
@@ -532,7 +532,28 @@ $rooms_found = mysqli_num_rows($result) > 0;
                             <div class="room-card">
                                 <img src="<?php echo htmlspecialchars($room['image_url']); ?>" class="card-img-left" alt="<?php echo htmlspecialchars($room['room_type']); ?>" onerror="this.src='https://images.unsplash.com/photo-1618773928121-c32242e63f39';">
                                 <div class="room-details">
-                                    <h5><?php echo htmlspecialchars($room['room_type']); ?>    >>>   Room no<?php echo $room['id']; ?></h5>
+                                    <h5><?php echo htmlspecialchars($room['room_type']); ?> >>> Room no<?php echo $room['id']; ?></h5>
+                                    <p class="mb-1">
+                                        <small class="text-muted">
+                                            <i class="fas fa-hotel"></i> <?php echo htmlspecialchars($room['hotel_name']); ?>
+                                            <?php if (!empty($room['average_rating'])): ?>
+                                                <span class="ms-2">
+                                                    <?php 
+                                                    $rating = round($room['average_rating'] * 2) / 2; // Round to nearest 0.5
+                                                    for ($i = 1; $i <= 5; $i++): 
+                                                        if ($i <= floor($rating)): ?>
+                                                            <i class="fas fa-star text-warning"></i>
+                                                        <?php elseif ($i - 0.5 <= $rating && $rating < $i): ?>
+                                                            <i class="fas fa-star-half-alt text-warning"></i>
+                                                        <?php else: ?>
+                                                            <i class="far fa-star text-warning"></i>
+                                                        <?php endif; ?>
+                                                    <?php endfor; ?>
+                                                    <span class="text-muted">(<?php echo number_format($room['average_rating'], 1); ?>)</span>
+                                                </span>
+                                            <?php endif; ?>
+                                        </small>
+                                    </p>
                                     <p class="description"><?php echo htmlspecialchars($room['description']); ?></p>
                                     <p class="specs">
                                         <?php 
