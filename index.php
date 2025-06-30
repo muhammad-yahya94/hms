@@ -63,14 +63,16 @@ $check_out = isset($_GET['check_out']) ? $_GET['check_out'] : date('Y-m-d 12:00'
         .form-control, .form-select {
             border: 1px solid #d4a017;
             padding: 10px;
+            font-family: 'Poppins', sans-serif;
         }
         .btn-booking {
             background-color: #d4a017;
             color: white;
-            font-weight: bold;
+            font-weight: 600;
             padding: 10px;
             width: 100%;
             border: none;
+            border-radius: 5px;
             transition: all 0.3s;
         }
         .btn-booking:hover {
@@ -92,7 +94,7 @@ $check_out = isset($_GET['check_out']) ? $_GET['check_out'] : date('Y-m-d 12:00'
         }
         .hero-section h1 {
             font-size: 3.5rem;
-            font-weight: bold;
+            font-weight: 700;
         }
         .navbar {
             font-family: 'Poppins', sans-serif;
@@ -162,27 +164,66 @@ $check_out = isset($_GET['check_out']) ? $_GET['check_out'] : date('Y-m-d 12:00'
         .section-padding {
             padding: 60px 0;
         }
-        .card {
-            border: none;
-            border-radius: 10px;
+        .hotel-card {
+            background: white;
+            border-radius: 15px;
             overflow: hidden;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            transition: transform 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
         }
-        .card:hover {
+        .hotel-card:hover {
             transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
         }
-        .card-img-top {
-            height: 200px;
+        .hotel-card-img {
+            height: 220px;
             object-fit: cover;
+            width: 100%;
         }
-        .card-body {
+        .hotel-card-body {
             padding: 20px;
+            background: linear-gradient(180deg, #f8f9fa 0%, #ffffff 100%);
         }
-        .footer {
-            background-color: #1a1a1a;
-            color: white;
-            padding: 40px 0;
+        .hotel-card-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 10px;
+        }
+        .hotel-card-rating {
+            font-size: 0.9rem;
+            color: #d4a017;
+            margin-bottom: 10px;
+        }
+        .hotel-card-rating .fa-star,
+        .hotel-card-rating .fa-star-half-alt {
+            color: #d4a017;
+            margin-right: 2px;
+        }
+        .hotel-card-rating .text-muted {
+            color: #666 !important;
+            font-size: 0.85rem;
+        }
+        .hotel-card-description {
+            color: #666;
+            font-size: 0.95rem;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+        .hotel-card-location {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+        }
+        .hotel-card-location i {
+            color: #d4a017;
+            margin-right: 5px;
+        }
+        .hotel-card-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
         }
         .btn-custom {
             background-color: #d4a017;
@@ -190,10 +231,24 @@ $check_out = isset($_GET['check_out']) ? $_GET['check_out'] : date('Y-m-d 12:00'
             border: none;
             padding: 10px 20px;
             border-radius: 5px;
+            font-weight: 500;
             transition: all 0.3s;
+            font-family: 'Poppins', sans-serif;
         }
         .btn-custom:hover {
             background-color: #b38b12;
+            transform: translateY(-2px);
+        }
+        .chat-link {
+            background-color: #f8f9fa;
+            color: #d4a017;
+            padding: 10px;
+            border-radius: 50%;
+            transition: all 0.3s;
+        }
+        .chat-link:hover {
+            background-color: #d4a017;
+            color: white;
             transform: translateY(-2px);
         }
         .room-category {
@@ -211,14 +266,10 @@ $check_out = isset($_GET['check_out']) ? $_GET['check_out'] : date('Y-m-d 12:00'
             color: #d4a017;
             font-weight: 600;
         }
-        .hotel-rating {
-            font-size: 0.9rem;
-            white-space: nowrap;
-        }
-        .hotel-rating .fa-star,
-        .hotel-rating .fa-star-half-alt {
-            color: #ffc107;
-            margin-right: 1px;
+        .footer {
+            background-color: #1a1a1a;
+            color: white;
+            padding: 40px 0;
         }
     </style>
 </head>
@@ -234,12 +285,9 @@ $check_out = isset($_GET['check_out']) ? $_GET['check_out'] : date('Y-m-d 12:00'
                 </button>
                 <div class="collapse navbar-collapse" id="navbarNav">
                     <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
+                        <li class="nav-item">
                             <a class="nav-link" href="index.php">Home</a>
                         </li>
-                        <!-- <li class="nav-item">
-                            <a class="nav-link" href="room-list.php">Rooms</a>
-                        </li> -->
                         <li class="nav-item">
                             <a class="nav-link" href="hotels.php">Hotels</a>
                         </li>
@@ -375,10 +423,8 @@ $check_out = isset($_GET['check_out']) ? $_GET['check_out'] : date('Y-m-d 12:00'
         </div>
     </section>
 
-
-
-       <!-- About Section -->
-       <section class="section-padding">
+    <!-- About Section -->
+    <section class="section-padding">
         <div class="container">
             <div class="row">
                 <div class="col-lg-6 mb-4">
@@ -410,35 +456,38 @@ $check_out = isset($_GET['check_out']) ? $_GET['check_out'] : date('Y-m-d 12:00'
             <div class="row">
                 <?php foreach ($featured_hotels as $hotel): ?>
                 <div class="col-md-4 mb-4">
-                    <div class="card">
-                        <img src="<?php echo htmlspecialchars($hotel['image_url']); ?>" class="card-img-top" alt="<?php echo htmlspecialchars($hotel['name']); ?>">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                <h5 class="card-title mb-0"><?php echo htmlspecialchars($hotel['name']); ?></h5>
-                                <?php if (!empty($hotel['average_rating'])): ?>
-                                    <div class="hotel-rating">
-                                        <span class="text-warning">
-                                            <?php 
-                                            $rating = round($hotel['average_rating'] * 2) / 2; // Round to nearest 0.5
-                                            for ($i = 1; $i <= 5; $i++): 
-                                                if ($i <= floor($rating)): ?>
-                                                    <i class="fas fa-star"></i>
-                                                <?php elseif ($i - 0.5 <= $rating && $rating < $i): ?>
-                                                    <i class="fas fa-star-half-alt"></i>
-                                                <?php else: ?>
-                                                    <i class="far fa-star"></i>
-                                                <?php endif; ?>
-                                            <?php endfor; ?>
-                                            <span class="text-muted small">(<?php echo number_format($hotel['average_rating'], 1); ?>)</span>
-                                        </span>
-                                    </div>
-                                <?php endif; ?>
-                            </div>
-                            <p class="card-text"><?php echo htmlspecialchars($hotel['description']); ?></p>
-                            <p class="card-text mb-3">
+                    <div class="hotel-card">
+                        <img src="<?php echo htmlspecialchars($hotel['image_url']); ?>" class="hotel-card-img" alt="<?php echo htmlspecialchars($hotel['name']); ?>">
+                        <div class="hotel-card-body">
+                            <h5 class="hotel-card-title"><?php echo htmlspecialchars($hotel['name']); ?></h5>
+                            <?php if (!empty($hotel['average_rating'])): ?>
+                                <div class="hotel-card-rating">
+                                    <?php 
+                                    $rating = round($hotel['average_rating'] * 2) / 2; // Round to nearest 0.5
+                                    for ($i = 1; $i <= 5; $i++): 
+                                        if ($i <= floor($rating)): ?>
+                                            <i class="fas fa-star"></i>
+                                        <?php elseif ($i - 0.5 <= $rating && $rating < $i): ?>
+                                            <i class="fas fa-star-half-alt"></i>
+                                        <?php else: ?>
+                                            <i class="far fa-star"></i>
+                                        <?php endif; ?>
+                                    <?php endfor; ?>
+                                    <span class="text-muted">(<?php echo number_format($hotel['average_rating'], 1); ?>)</span>
+                                </div>
+                            <?php endif; ?>
+                            <p class="hotel-card-description"><?php echo htmlspecialchars($hotel['description']); ?></p>
+                            <p class="hotel-card-location">
                                 <i class="fas fa-map-marker-alt"></i> <?php echo htmlspecialchars($hotel['city']); ?>
                             </p>
-                            <a href="room-list.php?hotel=<?php echo $hotel['id']; ?>" class="btn btn-custom">View Rooms</a>
+                            <div class="hotel-card-actions">
+                                <a href="room-list.php?hotel=<?php echo $hotel['id']; ?>" class="btn btn-custom flex-grow-1">
+                                    <i class="fas fa-hotel me-1"></i> View Rooms
+                                </a>
+                                <a href="chat.php?hotel_id=<?php echo $hotel['id']; ?>" class="chat-link" title="Chat with hotel">
+                                    <i class="fas fa-comment-dots"></i>
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>

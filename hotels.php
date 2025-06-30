@@ -175,62 +175,138 @@ if ($result) {
         .section-padding {
             padding: 60px 0;
         }
-        .card {
-            border: none;
-            border-radius: 10px;
+        .hotel-card {
+            background: white;
+            border-radius: 15px;
             overflow: hidden;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            transition: transform 0.3s ease;
-            height: 100%;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
             position: relative;
+            height: 100%;
         }
-        .card:hover {
+        .hotel-card:hover {
             transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.2);
         }
-        .card-img-top {
-            height: 200px;
+        .hotel-card-img {
+            height: 220px;
             object-fit: cover;
+            width: 100%;
         }
-        .card-body {
+        .hotel-card-body {
             padding: 20px;
+            background: linear-gradient(180deg, #f8f9fa 0%, #ffffff 100%);
         }
-        .rating-stars {
-            color: #ffc107;
+        .hotel-card-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1a1a1a;
             margin-bottom: 10px;
         }
-        .review-count {
-            font-size: 0.9em;
-            color: #6c757d;
+        .hotel-card-rating {
+            font-size: 0.9rem;
+            color: #d4a017;
+            margin-bottom: 10px;
+        }
+        .hotel-card-rating .fa-star,
+        .hotel-card-rating .fa-star-half-alt {
+            color: #d4a017;
+            margin-right: 2px;
+        }
+        .hotel-card-rating .review-count {
+            color: #666;
+            font-size: 0.85rem;
             margin-left: 5px;
         }
-        .review-card {
-            border: 1px solid #e9ecef;
-            border-radius: 8px;
-            padding: 15px;
+        .hotel-card-description {
+            color: #666;
+            font-size: 0.95rem;
             margin-bottom: 15px;
-            background-color: #fff;
+            line-height: 1.5;
         }
-        .review-header {
+        .hotel-card-location {
+            color: #666;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+        }
+        .hotel-card-location i {
+            color: #d4a017;
+            margin-right: 5px;
+        }
+        .hotel-card-actions {
             display: flex;
-            justify-content: space-between;
-            margin-bottom: 10px;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 15px;
         }
-        .review-user {
-            font-weight: 600;
+        .btn-custom {
+            background-color: #d4a017;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-weight: 500;
+            transition: all 0.3s;
+            font-family: 'Poppins', sans-serif;
         }
-        .review-date {
-            color: #6c757d;
-            font-size: 0.9em;
+        .btn-custom:hover {
+            background-color: #b38b12;
+            transform: translateY(-2px);
         }
-        .review-rating {
-            color: #ffc107;
-            margin-bottom: 5px;
+        .chat-link {
+            background-color: #f8f9fa;
+            color: #d4a017;
+            padding: 10px;
+            border-radius: 50%;
+            transition: all 0.3s;
+        }
+        .chat-link:hover {
+            background-color: #d4a017;
+            color: white;
+            transform: translateY(-2px);
+        }
+        .review-toggle {
+            background-color: #f8f9fa;
+            color: #1a1a1a;
+            border: 1px solid #d4a017;
+            padding: 8px 15px;
+            border-radius: 5px;
+            font-weight: 500;
+            transition: all 0.3s;
+            width: 100%;
+            text-align: center;
+        }
+        .review-toggle:hover {
+            background-color: #d4a017;
+            color: white;
+            transform: translateY(-2px);
         }
         .review-form {
             margin-top: 20px;
             padding: 20px;
-            background-color: #f8f9fa;
-            border-radius: 8px;
+            background: linear-gradient(180deg, #f8f9fa 0%, #ffffff 100%);
+            border-radius: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
+        .review-form .form-label {
+            color: #1a1a1a;
+            font-weight: 500;
+        }
+        .review-form .form-control {
+            border: 1px solid #d4a017;
+            border-radius: 5px;
+        }
+        .review-form button {
+            background-color: #d4a017;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+        .review-form button:hover {
+            background-color: #b38b12;
+            transform: translateY(-2px);
         }
         .star-rating {
             display: inline-block;
@@ -247,23 +323,48 @@ if ($result) {
         }
         .star-rating input[type="radio"]:checked + label,
         .star-rating input[type="radio"]:checked ~ label {
-            color: #ffc107;
+            color: #d4a017;
         }
         .star-rating label:hover,
         .star-rating label:hover ~ label {
-            color: #ffca2c;
+            color: #b38b12;
         }
-        .btn-custom {
-            background-color: #d4a017;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            transition: all 0.3s;
+        .review-card {
+            background: linear-gradient(180deg, #f8f9fa 0%, #ffffff 100%);
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            transition: transform 0.3s ease;
         }
-        .btn-custom:hover {
-            background-color: #b38b12;
-            transform: translateY(-2px);
+        .review-card:hover {
+            transform: translateY(-3px);
+        }
+        .review-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .review-user {
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+        .review-user img {
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .review-date {
+            color: #666;
+            font-size: 0.85rem;
+        }
+        .review-rating {
+            color: #d4a017;
+            margin-bottom: 5px;
+        }
+        .review-comment {
+            color: #666;
+            font-size: 0.95rem;
+            line-height: 1.5;
         }
         .footer {
             background-color: #1a1a1a;
@@ -273,8 +374,7 @@ if ($result) {
     </style>
 </head>
 <body>
-    <!-- Hero Section with Integrated Navbar.rectangle
-
+    <!-- Hero Section with Integrated Navbar -->
     <section class="hero-section">
         <nav class="navbar navbar-expand-lg navbar-dark navbar-transparent">
             <div class="container">
@@ -336,45 +436,50 @@ if ($result) {
             <div class="row">
                 <?php if (empty($all_hotels)): ?>
                     <div class="col-12 text-center">
-                        <p class="text-muted">No hotels available at the moment.</p>
+                        <p class="text-muted" style="color: #666;">No hotels available at the moment.</p>
                     </div>
                 <?php else: ?>
                     <?php foreach ($all_hotels as $hotel): ?>
                         <div class="col-md-4 mb-4">
-                            <div class="card" id="hotel-<?php echo $hotel['id']; ?>">
-                                <img src="<?php echo htmlspecialchars($hotel['image_url']); ?>" class="card-img-top" alt="<?php echo htmlspecialchars($hotel['name']); ?>">
-                                <div class="card-body">
-                                    <h5 class="card-title"><?php echo htmlspecialchars($hotel['name']); ?></h5>
-                                    <div class="mb-2">
-                                        <div class="rating-stars">
-                                            <?php
-                                            $rating = round($hotel['average_rating'], 1);
-                                            $fullStars = floor($rating);
-                                            $hasHalfStar = ($rating - $fullStars) >= 0.5;
-                                            $emptyStars = 5 - $fullStars - ($hasHalfStar ? 1 : 0);
-                                            for ($i = 0; $i < $fullStars; $i++) {
-                                                echo '<i class="fas fa-star"></i>';
-                                            }
-                                            if ($hasHalfStar) {
-                                                echo '<i class="fas fa-star-half-alt"></i>';
-                                            }
-                                            for ($i = 0; $i < $emptyStars; $i++) {
-                                                echo '<i class="far fa-star"></i>';
-                                            }
-                                            ?>
-                                            <span class="review-count">(<?php echo $hotel['review_count']; ?>)</span>
-                                        </div>
-                                        <div class="text-muted small"><?php echo number_format($rating, 1); ?> out of 5</div>
+                            <div class="hotel-card" id="hotel-<?php echo $hotel['id']; ?>">
+                                <img src="<?php echo htmlspecialchars($hotel['image_url']); ?>" class="hotel-card-img" alt="<?php echo htmlspecialchars($hotel['name']); ?>">
+                                <div class="hotel-card-body">
+                                    <h5 class="hotel-card-title"><?php echo htmlspecialchars($hotel['name']); ?></h5>
+                                    <div class="hotel-card-rating">
+                                        <?php
+                                        $rating = round($hotel['average_rating'], 1);
+                                        $fullStars = floor($rating);
+                                        $hasHalfStar = ($rating - $fullStars) >= 0.5;
+                                        $emptyStars = 5 - $fullStars - ($hasHalfStar ? 1 : 0);
+                                        for ($i = 0; $i < $fullStars; $i++) {
+                                            echo '<i class="fas fa-star"></i>';
+                                        }
+                                        if ($hasHalfStar) {
+                                            echo '<i class="fas fa-star-half-alt"></i>';
+                                        }
+                                        for ($i = 0; $i < $emptyStars; $i++) {
+                                            echo '<i class="far fa-star"></i>';
+                                        }
+                                        ?>
+                                        <span class="review-count">(<?php echo $hotel['review_count']; ?>)</span>
+                                        <div style="color: #666; font-size: 0.85rem;"><?php echo number_format($rating, 1); ?> out of 5</div>
                                     </div>
-                                    <p class="card-text"><?php echo htmlspecialchars($hotel['description']); ?></p>
-                                    <p class="card-text">
+                                    <p class="hotel-card-description"><?php echo htmlspecialchars($hotel['description']); ?></p>
+                                    <p class="hotel-card-location">
                                         <i class="fas fa-map-marker-alt"></i> <?php echo htmlspecialchars($hotel['city']); ?>
                                     </p>
-                                    <a href="room-list.php?hotel=<?php echo $hotel['id']; ?>" class="btn btn-custom mb-2">View Rooms</a>
+                                    <div class="hotel-card-actions">
+                                        <a href="room-list.php?hotel=<?php echo $hotel['id']; ?>" class="btn btn-custom flex-grow-1">
+                                            <i class="fas fa-hotel me-1"></i> View Rooms
+                                        </a>
+                                        <a href="chat.php?hotel_id=<?php echo $hotel['id']; ?>" class="chat-link" title="Chat with hotel">
+                                            <i class="fas fa-comment-dots"></i>
+                                        </a>
+                                    </div>
                                     
                                     <!-- Review Form (only for logged-in users) -->
                                     <?php if (isLoggedIn()): ?>
-                                        <button class="btn btn-outline-secondary btn-sm w-100 mb-3" type="button" data-bs-toggle="collapse" data-bs-target="#reviewForm<?php echo $hotel['id']; ?>">
+                                        <button class="review-toggle btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#reviewForm<?php echo $hotel['id']; ?>">
                                             Write a Review
                                         </button>
                                         
@@ -400,7 +505,7 @@ if ($result) {
                                                     <label for="comment-<?php echo $hotel['id']; ?>" class="form-label">Your Review</label>
                                                     <textarea class="form-control" id="comment-<?php echo $hotel['id']; ?>" name="comment" rows="3" required></textarea>
                                                 </div>
-                                                <button type="submit" name="submit_review" class="btn btn-primary btn-sm">Submit Review</button>
+                                                <button type="submit" name="submit_review" class="btn btn-custom btn-sm">Submit Review</button>
                                             </form>
                                         </div>
                                     <?php endif; ?>
@@ -542,7 +647,7 @@ if ($result) {
                     const checkedValue = parseInt(checkedInput.value);
                     labels.forEach(label => {
                         const starValue = parseInt(label.getAttribute('for').match(/\d+/)[0]);
-                        label.style.color = starValue <= checkedValue ? '#ffc107' : '#ddd';
+                        label.style.color = starValue <= checkedValue ? '#d4a017' : '#ddd';
                     });
                 }
                 
@@ -552,7 +657,7 @@ if ($result) {
                         const rating = parseInt(this.value);
                         labels.forEach(label => {
                             const starValue = parseInt(label.getAttribute('for').match(/\d+/)[0]);
-                            label.style.color = starValue <= rating ? '#ffc107' : '#ddd';
+                            label.style.color = starValue <= rating ? '#d4a017' : '#ddd';
                         });
                     });
                 });
@@ -563,7 +668,7 @@ if ($result) {
                         const hoverValue = parseInt(this.getAttribute('for').match(/\d+/)[0]);
                         labels.forEach(l => {
                             const starValue = parseInt(l.getAttribute('for').match(/\d+/)[0]);
-                            l.style.color = starValue <= hoverValue ? '#ffca2c' : '#ddd';
+                            l.style.color = starValue <= hoverValue ? '#b38b12' : '#ddd';
                         });
                     });
                     
@@ -573,7 +678,7 @@ if ($result) {
                             const checkedValue = parseInt(checkedInput.value);
                             labels.forEach(l => {
                                 const starValue = parseInt(l.getAttribute('for').match(/\d+/)[0]);
-                                l.style.color = starValue <= checkedValue ? '#ffc107' : '#ddd';
+                                l.style.color = starValue <= checkedValue ? '#d4a017' : '#ddd';
                             });
                         } else {
                             labels.forEach(l => l.style.color = '#ddd');

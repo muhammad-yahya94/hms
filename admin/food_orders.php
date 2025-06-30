@@ -373,6 +373,32 @@ if ($stmt) {
                     <a class="nav-link" href="users.php"><i class="fas fa-users"></i> Employees</a>
                     <a class="nav-link" href="reservations.php"><i class="fas fa-calendar-check"></i> Reservations</a>
                     <a class="nav-link active" href="food_orders.php"><i class="fas fa-shopping-cart"></i> Food Orders</a>
+                    <a class="nav-link" href="chat.php">
+                        <i class="fas fa-comments"></i> Customer Chats
+                        <?php 
+                        // Get unread message count for the admin's hotel
+                        $unread_count = 0;
+                        $vendor_id = $_SESSION['user_id'];
+                        $stmt = $conn->prepare("
+                            SELECT COUNT(m.id) as unread_count
+                            FROM messages m
+                            JOIN conversations c ON m.conversation_id = c.id
+                            JOIN hotels h ON c.hotel_id = h.id
+                            WHERE h.vendor_id = ? AND m.sender_type = 'user' AND m.is_read = FALSE
+                        ");
+                        if ($stmt) {
+                            $stmt->bind_param("i", $vendor_id);
+                            $stmt->execute();
+                            $result = $stmt->get_result();
+                            if ($row = $result->fetch_assoc()) {
+                                $unread_count = $row['unread_count'];
+                            }
+                            $stmt->close();
+                        }
+                        if ($unread_count > 0): ?>
+                            <span class="badge bg-danger ms-2"><?php echo $unread_count; ?></span>
+                        <?php endif; ?>
+                    </a>
                     <a class="nav-link" href="../index.php" target="_blank"><i class="fas fa-external-link-alt"></i> View Site</a>
                     <a class="nav-link" href="../logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a>
                 </nav>
