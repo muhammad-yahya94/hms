@@ -179,7 +179,7 @@ $amenities_list = [
     'standard' => 'WiFi, TV, AC',
     'deluxe' => 'WiFi, TV, AC, Minibar'
 ];
-$price_per_night_list = [
+$price_per_hour_list = [
     'standard' => 4800.00,
     'deluxe' => 7200.00
 ];
@@ -212,7 +212,7 @@ foreach ($hotels as $hotel) {
             'hotel_id' => $hotel['id'],
             'room_type' => $room_type,
             'description' => "$room_type room in {$hotel['name']}.",
-            'price_per_night' => $price_per_night_list[$room_type],
+            'price_per_hour' => $price_per_hour_list[$room_type],
             'capacity' => $capacity_list[$room_type],
             'image_url' => $downloaded_path,
             'amenities' => $amenities_list[$room_type],
@@ -225,14 +225,14 @@ foreach ($hotels as $hotel) {
 }
 
 foreach ($rooms as $room) {
-    $sql = "INSERT INTO rooms (id, hotel_id, room_type, description, price_per_night, capacity, image_url, amenities, status, created_at, updated_at) 
+    $sql = "INSERT INTO rooms (id, hotel_id, room_type, description, price_per_hour, capacity, image_url, amenities, status, created_at, updated_at) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     $params = [
         $room['id'],
         $room['hotel_id'],
         $room['room_type'],
         $room['description'],
-        $room['price_per_night'],
+        $room['price_per_hour'],
         $room['capacity'],
         $room['image_url'],
         $room['amenities'],
@@ -240,7 +240,7 @@ foreach ($rooms as $room) {
         $room['created_at'],
         $room['updated_at']
     ];
-    $types = "iissdississ"; // Updated to match: i (id), i (hotel_id), s (room_type), s (description), d (price_per_night), i (capacity), s (image_url), s (amenities), s (status), s (created_at), s (updated_at)
+    $types = "iissdississ"; // Updated to match: i (id), i (hotel_id), s (room_type), s (description), d (price_per_hour), i (capacity), s (image_url), s (amenities), s (status), s (created_at), s (updated_at)
     if (!executeQuery($conn, $sql, $params, $types)) {
         echo "Failed to insert room ID {$room['id']}. Stopping.\n";
         exit;

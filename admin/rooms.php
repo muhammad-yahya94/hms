@@ -53,11 +53,11 @@ if (isset($_POST['delete_room'])) {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['add_room']) || isset($_POST['update_room']))) {
     $hotel_id = (int)$_POST['hotel_id'];
     $room_type = mysqli_real_escape_string($conn, $_POST['room_type']);
-    $price = (float)$_POST['price_per_night'];
+    $price = (float)$_POST['price_per_hour'];
     $capacity = (int)$_POST['capacity'];
     $amenities = mysqli_real_escape_string($conn, $_POST['amenities']);
     $description = mysqli_real_escape_string($conn, $_POST['description']);
-    $status = in_array($_POST['status'], ['available', 'booked', 'maintenance']) ? $_POST['status'] : 'available';
+    $status = in_array($_POST['status'], ['available', 'not available', 'maintenance']) ? $_POST['status'] : 'available';
     $room_id = isset($_POST['room_id']) ? (int)$_POST['room_id'] : null;
 
     // Verify the hotel belongs to the admin
@@ -115,7 +115,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['add_room']) || isset
 
         if (empty($error)) {
             if (isset($_POST['add_room'])) {
-                $sql = "INSERT INTO rooms (hotel_id, room_type, description, price_per_night, capacity, amenities, image_url, status) 
+                $sql = "INSERT INTO rooms (hotel_id, room_type, description, price_per_hour, capacity, amenities, image_url, status) 
                         VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
                 $stmt = mysqli_prepare($conn, $sql);
                 mysqli_stmt_bind_param($stmt, "issdisss", $hotel_id, $room_type, $description, $price, $capacity, $amenities, $image_path, $status);
@@ -123,7 +123,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (isset($_POST['add_room']) || isset
                 // Update room with vendor_id check
                 $sql = "UPDATE rooms r 
                         JOIN hotels h ON r.hotel_id = h.id 
-                        SET r.hotel_id = ?, r.room_type = ?, r.description = ?, r.price_per_night = ?, r.capacity = ?, r.amenities = ?, r.status = ?";
+                        SET r.hotel_id = ?, r.room_type = ?, r.description = ?, r.price_per_hour = ?, r.capacity = ?, r.amenities = ?, r.status = ?";
                 $params = [$hotel_id, $room_type, $description, $price, $capacity, $amenities, $status];
                 $types = "issdiss";
                 
@@ -222,66 +222,136 @@ mysqli_stmt_close($stmt);
         }
         .room-card {
             background: white;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-            transition: transform 0.3s;
+            border-radius: 15px;
+            overflow: hidden;
+            margin-bottom: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(0,0,0,0.05);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
         }
         .room-card:hover {
-            transform: translateY(-5px);
+            transform: translateY(-8px);
+            box-shadow: 0 12px 25px rgba(0,0,0,0.12);
         }
-        .room-card img {
+        .room-image-container {
+            position: relative;
             width: 100%;
-            height: 200px;
+            padding-top: 60%; /* 5:3 aspect ratio */
+            overflow: hidden;
+        }
+        .room-image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             object-fit: cover;
-            border-radius: 10px;
-            margin-bottom: 15px;
-        }  
-        .btn-custom {
-            background-color: #d4a017;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 5px;
-            transition: all 0.3s;
+            transition: transform 0.5s ease;
         }
-        .btn-custom:hover {
-            background-color: #b38b12;
-            transform: translateY(-2px);
+        .room-card:hover .room-image {
+            transform: scale(1.05);
         }
-        .btn-edit {
-            background-color: #28a745;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 5px;
-            transition: all 0.3s;
+        .room-card-body {
+            padding: 20px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
         }
-        .btn-edit:hover {
-            background-color: #218838;
-            transform: translateY(-2px);
+        .room-card h5 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #2c3e50;
         }
-        .btn-delete {
-            background-color: #dc3545;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 5px;
-            transition: all 0.3s;
+        .room-hotel {
+            display: flex;
+            align-items: center;
+            color: #7f8c8d;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
         }
-        .btn-delete:hover {
-            background-color: #c82333;
-            transform: translateY(-2px);
+        .room-hotel i {
+            margin-right: 8px;
+            color: #d4a017;
         }
-        .status-badge {
-            padding: 5px 10px;
-            border-radius: 15px;
-            font-size: 0.8rem;
+        .room-type {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #d4a017;
+            margin: 5px 0 10px 0;
+            text-transform: capitalize;
+        }
+        .room-details {
+            margin: 10px 0;
+            flex: 1;
+        }
+        .room-details p {
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+            color: #555;
+            line-height: 1.5;
+        }
+        .room-details p:last-child {
+            margin-bottom: 0;
+        }
+        .room-details-label {
+            font-weight: 600;
+            color: #2c3e50;
             display: inline-block;
+            min-width: 80px;
+        }
+        .price {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin: 10px 0;
+        }
+        .price span {
+            color: #d4a017;
+        }
+        .status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            text-transform: capitalize;
+        }
+        .status-available {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+        .status-not  {
+            background-color: #ffebee;
+            color: #c62828;
+        }
+        .status-maintenance {
+            background-color: #fff8e1;
+            color: #f57f17;
+        }
+        .room-actions {
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .btn-sm {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.85rem;
+            border-radius: 6px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .btn-sm i {
+            margin-right: 5px;
         }
         .status-available { background-color: #28a745; color: white; }
-        .status-booked { background-color: #dc3545; color: white; }
+        .status-not { background-color: #dc3545; color: white; }
         .status-maintenance { background-color: #ffc107; color: black; }
         .alert-dismissible {
             position: relative;
@@ -310,7 +380,7 @@ mysqli_stmt_close($stmt);
                     <a class="nav-link" href="hotels.php"><i class="fas fa-hotel"></i> Hotels</a>
                     <a class="nav-link active" href="rooms.php"><i class="fas fa-bed"></i> Rooms</a>
                     <a class="nav-link" href="food.php"><i class="fas fa-utensils"></i> Food Menu</a>
-                    <a class="nav-link" href="users.php"><i class="fas fa-users"></i> Users</a>
+                    <a class="nav-link" href="users.php"><i class="fas fa-users"></i> Employee</a>
                     <a class="nav-link" href="reservations.php"><i class="fas fa-calendar-check"></i> Reservations</a>
                     <a class="nav-link" href="food_orders.php"><i class="fas fa-shopping-cart"></i> Food Orders</a>
                     <a class="nav-link" href="../index.php" target="_blank"><i class="fas fa-external-link-alt"></i> View Site</a>
@@ -347,23 +417,73 @@ mysqli_stmt_close($stmt);
                         <?php while($room = mysqli_fetch_assoc($rooms)): ?>
                             <div class="col-md-6 col-lg-4">
                                 <div class="room-card">
-                                    <?php if (!empty($room['image_url'])): ?>  
-                                        <img src="../<?php echo htmlspecialchars($room['image_url']); ?>" alt="Room Image" class="room-image">
-                                    <?php endif; ?>
-                                    <div class="room-details">
-                                        <h5><?php echo htmlspecialchars($room['hotel_name']); ?></h5>
-                                        <p>Room no .   <?php echo $room['id']; ?></p>
-                                        <p class="room-type"><?php echo ucfirst($room['room_type']); ?></p>
-                                        <p class="price">PKR <?php echo number_format($room['price_per_night'], 2); ?> per hour</p>
-                                        <p class="capacity">Capacity: <?php echo $room['capacity']; ?> guests</p>
-                                        <p class="amenities"><?php echo htmlspecialchars($room['amenities']); ?></p>
-                                        <p class="status">
-                                            Status: <span class="status-badge status-<?php echo $room['status']; ?>">
-                                                <?php echo ucfirst($room['status']); ?>
-                                            </span>
-                                        </p>
+                                    <div class="room-image-container">
+                                        <?php if (!empty($room['image_url'])): ?>  
+                                            <img src="../<?php echo htmlspecialchars($room['image_url']); ?>" 
+                                                 alt="<?php echo htmlspecialchars($room['room_type'] . ' room at ' . $room['hotel_name']); ?>" 
+                                                 class="room-image"
+                                                 onerror="this.src='https://images.unsplash.com/photo-1582719471384-894e9cbf703f'">
+                                        <?php else: ?>
+                                            <img src="https://images.unsplash.com/photo-1582719471384-894e9cbf703f" 
+                                                 alt="Room placeholder" 
+                                                 class="room-image">
+                                        <?php endif; ?>
+                                    </div>
+                                    <div class="room-card-body">
+                                        <h5 class="room-type"><?php echo ucwords(str_replace('_', ' ', $room['room_type'])); ?></h5>
+                                        <div class="room-hotel">
+                                            <i class="fas fa-hotel"></i>
+                                            <span><?php echo htmlspecialchars($room['hotel_name']); ?> - Room #<?php echo $room['id']; ?></span>
+                                        </div>
+                                        
+                                        <div class="room-details">
+                                            <p><span class="room-details-label">Capacity:</span> 
+                                                <i class="fas fa-user-friends" style="color: #d4a017;"></i> 
+                                                <?php echo $room['capacity']; ?> <?php echo $room['capacity'] > 1 ? 'guests' : 'guest'; ?>
+                                            </p>
+                                            <?php if (!empty($room['amenities'])): ?>
+                                                <p><span class="room-details-label">Amenities:</span> 
+                                                    <?php 
+                                                    $amenities = explode(',', $room['amenities']);
+                                                    $amenityIcons = [
+                                                        'wifi' => 'wifi',
+                                                        'ac' => 'snowflake',
+                                                        'tv' => 'tv',
+                                                        'breakfast' => 'coffee',
+                                                        'pool' => 'swimming-pool',
+                                                        'gym' => 'dumbbell',
+                                                        'parking' => 'parking',
+                                                        'restaurant' => 'utensils'
+                                                    ];
+                                                    
+                                                    foreach ($amenities as $index => $amenity): 
+                                                        $amenity = strtolower(trim($amenity));
+                                                        $icon = $amenity;
+                                                        if (array_key_exists($amenity, $amenityIcons)) {
+                                                            $icon = $amenityIcons[$amenity];
+                                                        }
+                                                    ?>
+                                                        <span class="badge bg-light text-dark me-1 mb-1" title="<?php echo ucfirst($amenity); ?>">
+                                                            <i class="fas fa-<?php echo $icon; ?> text-warning"></i> 
+                                                            <?php echo ucfirst($amenity); ?>
+                                                        </span>
+                                                    <?php endforeach; ?>
+                                                </p>
+                                            <?php endif; ?>
+                                            <p class="price">
+                                                <span>PKR <?php echo number_format($room['price_per_hour'], 2); ?></span> / hour
+                                            </p>
+                                            <p class="mb-0">
+                                                <span class="status status-<?php echo $room['status']; ?>">
+                                                    <?php echo ucfirst($room['status']); ?>
+                                                </span>
+                                            </p>
+                                        </div>
+                                        
                                         <div class="room-actions">
-                                            <button class="btn btn-sm btn-edit" data-bs-toggle="modal" data-bs-target="#editRoomModal"
+                                            <button class="btn btn-sm btn-custom" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#editRoomModal"
                                                     data-room='<?php echo json_encode($room); ?>'>
                                                 <i class="fas fa-edit"></i> Edit
                                             </button>
@@ -371,7 +491,7 @@ mysqli_stmt_close($stmt);
                                                 onsubmit="return confirm('Are you sure you want to delete this room?')">
                                                 <input type="hidden" name="delete_room" value="true">
                                                 <input type="hidden" name="room_id" value="<?php echo $room['id']; ?>">
-                                                <button type="submit" class="btn btn-sm btn-delete">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">
                                                     <i class="fas fa-trash"></i> Delete
                                                 </button>
                                             </form>
@@ -431,15 +551,15 @@ mysqli_stmt_close($stmt);
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="price_per_night" class="form-label">Price per Hour *</label>
-                                <input type="number" class="form-control" id="price_per_night" name="price_per_night" step="0.01" min="0" required>
+                                <label for="price_per_hour" class="form-label">Price per Hour *</label>
+                                <input type="number" class="form-control" id="price_per_hour" name="price_per_hour" step="0.01" min="0" required>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="capacity" class="form-label">Capacity *</label>
                                 <input type="number" min="1" name="capacity" id="capacity" class="form-control" required>
                             </div>
                         </div>
-                        <div class="mb-3">
+                        <div class="mb-3">  
                             <label for="amenities" class="form-label">Amenities</label>
                             <textarea class="form-control" id="amenities" name="amenities" rows="2"></textarea>
                         </div>
@@ -447,7 +567,7 @@ mysqli_stmt_close($stmt);
                             <label for="status" class="form-label">Status *</label>
                             <select class="form-select" id="status" name="status" required>
                                 <option value="available">Available</option>
-                                <option value="booked">Booked</option>
+                                <option value="not available">Not Available</option>
                                 <option value="maintenance">Maintenance</option>
                             </select>
                         </div>
@@ -506,8 +626,8 @@ mysqli_stmt_close($stmt);
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="edit_price_per_night" class="form-label">Price per Hour *</label>
-                                <input type="number" class="form-control" id="edit_price_per_night" name="price_per_night" step="0.01" min="0" required>
+                                <label for="edit_price_per_hour" class="form-label">Price per Hour *</label>
+                                <input type="number" class="form-control" id="edit_price_per_hour" name="price_per_hour" step="0.01" min="0" required>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label for="edit_capacity" class="form-label">Capacity *</label>
@@ -522,7 +642,7 @@ mysqli_stmt_close($stmt);
                             <label for="edit_status" class="form-label">Status *</label>
                             <select class="form-select" id="edit_status" name="status" required>
                                 <option value="available">Available</option>
-                                <option value="booked">Booked</option>
+                                <option value="not available">Not Available</option>
                                 <option value="maintenance">Maintenance</option>
                             </select>
                         </div>
@@ -636,7 +756,7 @@ mysqli_stmt_close($stmt);
                     'edit_hotel_id': room.hotel_id || '',
                     'edit_room_type': room.room_type || '',
                     'edit_description': room.description || '',
-                    'edit_price_per_night': room.price_per_night || '',
+                    'edit_price_per_hour': room.price_per_hour || '',
                     'edit_capacity': room.capacity || '',
                     'edit_amenities': room.amenities || '',
                     'edit_status': room.status || ''
@@ -677,7 +797,7 @@ mysqli_stmt_close($stmt);
         const addRoomForm = document.getElementById('addRoomForm');
         if (addRoomForm) {
             addRoomForm.addEventListener('submit', function(e) {
-                const price = document.getElementById('price_per_night');
+                const price = document.getElementById('price_per_hour');
                 const capacity = document.getElementById('capacity');
                 if (price && price.value <= 0) {
                     e.preventDefault();
@@ -694,7 +814,7 @@ mysqli_stmt_close($stmt);
         const editRoomForm = document.getElementById('editRoomForm');
         if (editRoomForm) {
             editRoomForm.addEventListener('submit', function(e) {
-                const price = document.getElementById('edit_price_per_night');
+                const price = document.getElementById('edit_price_per_hour');
                 const capacity = document.getElementById('edit_capacity');
                 if (price && price.value <= 0) {
                     e.preventDefault();

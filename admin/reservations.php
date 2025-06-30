@@ -10,7 +10,7 @@ $success = '';
 
 // Add required columns if they don't exist
 $required_columns = [
-    'booking_status' => "ALTER TABLE bookings ADD COLUMN booking_status ENUM('pending','confirmed','cancelled') DEFAULT 'pending'",
+    'booking_status' => "ALTER TABLE bookings ADD COLUMN booking_status ENUM('pending','confirmed','cancelled','completed') DEFAULT 'pending'",
     'check_in_date' => "ALTER TABLE bookings ADD COLUMN check_in_date DATETIME",
     'check_out_date' => "ALTER TABLE bookings ADD COLUMN check_out_date DATETIME",
     'total_price' => "ALTER TABLE bookings ADD COLUMN total_price DECIMAL(10,2) DEFAULT 0.00"
@@ -20,8 +20,24 @@ $required_columns = [
 $check_room_status = "SHOW COLUMNS FROM rooms LIKE 'status'";
 $result = mysqli_query($conn, $check_room_status);
 if (mysqli_num_rows($result) == 0) {
-    $sql = "ALTER TABLE rooms ADD COLUMN status ENUM('available', 'booked', 'maintenance') DEFAULT 'available'";
+    $sql = "ALTER TABLE rooms ADD COLUMN status ENUM('available', 'not available', 'maintenance') DEFAULT 'available'";
     mysqli_query($conn, $sql);
+}
+
+// Update booking status to 'completed' for past checkouts
+$current_time = date('Y-m-d H:i:s');
+$update_completed = "UPDATE bookings b 
+                    JOIN rooms r ON b.room_id = r.id
+                    JOIN hotels h ON b.hotel_id = h.id
+                    SET b.booking_status = 'completed', r.status = 'available'
+                    WHERE b.check_out_date < ? 
+                    AND b.booking_status NOT IN ('cancelled', 'completed')
+                    AND h.vendor_id = ?";
+$stmt = mysqli_prepare($conn, $update_completed);
+if ($stmt) {
+    mysqli_stmt_bind_param($stmt, "si", $current_time, $_SESSION['user_id']);
+    mysqli_stmt_execute($stmt);
+    mysqli_stmt_close($stmt);
 }
 
 foreach ($required_columns as $column => $sql) {
@@ -66,7 +82,7 @@ if (isset($_POST['update_status'])) {
                 $sql = "UPDATE rooms r 
                         JOIN bookings b ON r.id = b.room_id 
                         JOIN hotels h ON b.hotel_id = h.id
-                        SET r.status = 'booked' 
+                        SET r.status = 'not available' 
                         WHERE b.id = ? AND h.vendor_id = ?";
                 $stmt = mysqli_prepare($conn, $sql);
                 mysqli_stmt_bind_param($stmt, "ii", $booking_id, $_SESSION['user_id']);
@@ -242,7 +258,7 @@ $bookings = mysqli_stmt_get_result($stmt);
         .sidebar {
             background: #1a1a1a;
             color: white;
-            min-height: 100vh;
+            min-height: 100vh;   
             padding: 20px;
         }
         .sidebar .nav-link {
@@ -291,6 +307,10 @@ $bookings = mysqli_stmt_get_result($stmt);
         }
         .status-confirmed {
             background-color: #28a745;
+            color: white;
+        }
+        .status-completed {
+            background-color:rgb(40, 63, 167);
             color: white;
         }
         .status-cancelled {
@@ -380,7 +400,7 @@ $bookings = mysqli_stmt_get_result($stmt);
                     </a>
                     <a class="nav-link" href="food.php"><i class="fas fa-utensils"></i> Food Menu</a>
                     <a class="nav-link" href="users.php">
-                        <i class="fas fa-users"></i> Users
+                        <i class="fas fa-users"></i> Employee
                     </a>
                     <a class="nav-link active" href="reservations.php">
                         <i class="fas fa-calendar-check"></i> Reservations

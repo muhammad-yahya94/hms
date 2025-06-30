@@ -275,21 +275,37 @@ if (isset($_GET['edit'])) {
         }
         .hotel-card {
             background: white;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            transition: transform 0.3s;
+            border-radius: 15px;
+            overflow: hidden;
+            margin-bottom: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(0,0,0,0.05);
+            height: 100%;
+            display: flex;
+            flex-direction: column;
         }
         .hotel-card:hover {
-            transform: translateY(-5px);
+            transform: translateY(-8px);
+            box-shadow: 0 12px 25px rgba(0,0,0,0.12);
+        }
+        .hotel-image-container {
+            position: relative;
+            width: 100%;
+            padding-top: 60%; /* 5:3 aspect ratio */
+            overflow: hidden;
         }
         .hotel-card img {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
-            height: 200px;
+            height: 100%;
             object-fit: cover;
-            border-radius: 10px;
-            margin-bottom: 15px;
+            transition: transform 0.5s ease;
+        }
+        .hotel-card:hover img {
+            transform: scale(1.05);
         }
         .btn-custom {
             background-color: #d4a017;
@@ -314,18 +330,76 @@ if (isset($_GET['edit'])) {
         .alert {
             margin-bottom: 20px;
         }
+        .hotel-card-body {
+            padding: 20px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .hotel-card h4 {
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #2c3e50;
+        }
+        .hotel-location {
+            display: flex;
+            align-items: center;
+            color: #7f8c8d;
+            margin-bottom: 15px;
+            font-size: 0.95rem;
+        }
+        .hotel-location i {
+            margin-right: 8px;
+            color: #d4a017;
+        }
         .hotel-details {
-            margin-top: 15px;
+            margin: 15px 0;
+            flex: 1;
         }
         .hotel-details p {
-            margin-bottom: 5px;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+            color: #555;
+            line-height: 1.5;
+        }
+        .hotel-details p:last-child {
+            margin-bottom: 0;
         }
         .hotel-details-label {
-            font-weight: 500;
-            color: #555;
+            font-weight: 600;
+            color: #2c3e50;
+            display: inline-block;
+            min-width: 80px;
+        }
+        .hotel-description {
+            color: #666;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            margin: 10px 0;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         .action-buttons {
-            margin-top: 15px;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .btn-sm {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.85rem;
+            border-radius: 6px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .btn-sm i {
+            margin-right: 5px;
         }
         .modal-title {
             color: #d4a017;
@@ -350,7 +424,7 @@ if (isset($_GET['edit'])) {
                     </a>
                     <a class="nav-link" href="food.php"><i class="fas fa-utensils"></i> Food Menu</a>
                     <a class="nav-link" href="users.php">
-                        <i class="fas fa-users"></i> Users
+                        <i class="fas fa-users"></i> Employee
                     </a>
                     <a class="nav-link" href="reservations.php">
                         <i class="fas fa-calendar-check"></i> Reservations
@@ -395,37 +469,50 @@ if (isset($_GET['edit'])) {
                         <?php while($hotel = mysqli_fetch_assoc($hotels)): ?>
                             <div class="col-md-6 col-lg-4">
                                 <div class="hotel-card">
-                                    <img src="../<?php echo htmlspecialchars($hotel['image_url'] ?? 'images/placeholder.jpg'); ?>" 
-                                         alt="<?php echo htmlspecialchars($hotel['name']); ?>"
-                                         onerror="this.src='https://images.unsplash.com/photo-1566073771259-6a8506099945';">
-                                    <h4><?php echo htmlspecialchars($hotel['name']); ?></h4>
-                                    <p class="text-muted">
-                                        <i class="fas fa-map-marker-alt"></i> 
-                                        <?php echo htmlspecialchars($hotel['city']); ?>
-                                    </p>
-                                    
-                                    <div class="hotel-details">
-                                        <p><span class="hotel-details-label">Address:</span> <?php echo htmlspecialchars($hotel['address']); ?></p>
-                                        <?php if ($hotel['phone']): ?>
-                                            <p><span class="hotel-details-label">Phone:</span> <?php echo htmlspecialchars($hotel['phone']); ?></p>
-                                        <?php endif; ?>
-                                        <?php if ($hotel['email']): ?>
-                                            <p><span class="hotel-details-label">Email:</span> <?php echo htmlspecialchars($hotel['email']); ?></p>
-                                        <?php endif; ?>
-                                        <?php if ($hotel['website']): ?>
-                                            <p><span class="hotel-details-label">Website:</span> <a href="<?php echo htmlspecialchars($hotel['website']); ?>" target="_blank">Visit</a></p>
-                                        <?php endif; ?>
-                                        <p><span class="hotel-details-label">Description:</span> <?php echo htmlspecialchars(substr($hotel['description'] ?? '', 0, 100)); ?>...</p>
+                                    <div class="hotel-image-container">
+                                        <img src="../<?php echo htmlspecialchars($hotel['image_url'] ?? 'images/placeholder.jpg'); ?>" 
+                                             alt="<?php echo htmlspecialchars($hotel['name']); ?>"
+                                             onerror="this.src='https://images.unsplash.com/photo-1566073771259-6a8506099945';">
                                     </div>
-                                    
-                                    <div class="action-buttons d-flex justify-content-between">
-                                        <a href="?edit=<?php echo $hotel['id']; ?>" class="btn btn-sm btn-custom">
-                                            <i class="fas fa-edit"></i> Edit
-                                        </a>
-                                        <!-- <a href="?delete=<?php echo $hotel['id']; ?>" class="btn btn-sm btn-danger-custom" 
-                                           onclick="return confirm('Are you sure you want to delete this hotel?')">
-                                            <i class="fas fa-trash"></i> Delete
-                                        </a> -->
+                                    <div class="hotel-card-body">
+                                        <h4><?php echo htmlspecialchars($hotel['name']); ?></h4>
+                                        <div class="hotel-location">
+                                            <i class="fas fa-map-marker-alt"></i>
+                                            <span><?php echo htmlspecialchars($hotel['city']); ?></span>
+                                        </div>
+                                        
+                                        <div class="hotel-details">
+                                            <?php if ($hotel['address']): ?>
+                                                <p><span class="hotel-details-label">Address:</span> <?php echo htmlspecialchars($hotel['address']); ?></p>
+                                            <?php endif; ?>
+                                            <?php if ($hotel['phone']): ?>
+                                                <p><span class="hotel-details-label">Phone:</span> <?php echo htmlspecialchars($hotel['phone']); ?></p>
+                                            <?php endif; ?>
+                                            <?php if ($hotel['email']): ?>
+                                                <p><span class="hotel-details-label">Email:</span> <a href="mailto:<?php echo htmlspecialchars($hotel['email']); ?>" class="text-decoration-none"><?php echo htmlspecialchars($hotel['email']); ?></a></p>
+                                            <?php endif; ?>
+                                            <?php if ($hotel['website']): ?>
+                                                <p><span class="hotel-details-label">Website:</span> <a href="<?php echo (strpos($hotel['website'], 'http') === 0 ? '' : 'http://') . htmlspecialchars($hotel['website']); ?>" target="_blank" class="text-decoration-none">Visit Website</a></p>
+                                            <?php endif; ?>
+                                            <?php if (!empty($hotel['description'])): ?>
+                                                <div class="hotel-description" title="<?php echo htmlspecialchars($hotel['description']); ?>">
+                                                    <?php echo htmlspecialchars(substr($hotel['description'], 0, 150)); ?><?php echo strlen($hotel['description']) > 150 ? '...' : ''; ?>
+                                                </div>
+                                            <?php endif; ?>
+                                        </div>
+                                        
+                                        <div class="action-buttons">
+                                            <a href="?edit=<?php echo $hotel['id']; ?>" class="btn btn-sm btn-custom">
+                                                <i class="fas fa-edit"></i> Edit
+                                            </a>
+                                            <span class="badge bg-light text-dark">
+                                                <i class="fas fa-hotel"></i> Hotel
+                                            </span>
+                                            <!-- <a href="?delete=<?php echo $hotel['id']; ?>" class="btn btn-sm btn-outline-danger" 
+                                               onclick="return confirm('Are you sure you want to delete this hotel?')">
+                                                <i class="fas fa-trash"></i> Delete
+                                            </a> -->
+                                        </div>
                                     </div>
                                 </div>
                             </div>

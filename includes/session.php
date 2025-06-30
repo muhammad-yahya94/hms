@@ -1,4 +1,7 @@
 <?php
+// Set default timezone to Pakistan Standard Time (PKT)
+date_default_timezone_set('Asia/Karachi');
+
 session_start();
 
 function isLoggedIn() {

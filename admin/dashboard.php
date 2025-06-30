@@ -55,7 +55,7 @@ if ($result) {
     error_log("Error fetching total rooms: " . mysqli_error($conn));
 }
 
-// Total Users (excluding admins) for current admin
+// Total Employee (excluding admins) for current admin
 $stmt = mysqli_prepare($conn, "SELECT COUNT(*) as total FROM users WHERE role != 'admin' AND vendor_id = ?");
 mysqli_stmt_bind_param($stmt, "i", $user_id);
 mysqli_stmt_execute($stmt);
@@ -296,7 +296,7 @@ $recent_bookings = mysqli_stmt_get_result($stmt) ?: [];
                     <a class="nav-link" href="hotels.php"><i class="fas fa-hotel"></i> Hotels</a>
                     <a class="nav-link" href="rooms.php"><i class="fas fa-bed"></i> Rooms</a>
                     <a class="nav-link" href="food.php"><i class="fas fa-utensils"></i> Food Menu</a>
-                    <a class="nav-link" href="users.php"><i class="fas fa-users"></i> Users</a>
+                    <a class="nav-link" href="users.php"><i class="fas fa-users"></i> Employee</a>
                     <a class="nav-link" href="reservations.php"><i class="fas fa-calendar-check"></i> Reservations</a>
                     <a class="nav-link" href="food_orders.php"><i class="fas fa-shopping-cart"></i> Food Orders</a>
                     <a class="nav-link" href="../index.php" target="_blank"><i class="fas fa-external-link-alt"></i> View Site</a>
@@ -328,7 +328,7 @@ $recent_bookings = mysqli_stmt_get_result($stmt) ?: [];
                         <div class="stat-card">
                             <i class="fas fa-users"></i>
                             <h3><?php echo htmlspecialchars($stats['users']); ?></h3>
-                            <p>Total Users</p>
+                            <p>Total Employee</p>
                         </div>
                     </div>
                     <div class="col-md-3">

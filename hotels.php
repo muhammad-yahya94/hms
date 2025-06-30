@@ -170,9 +170,9 @@ while ($row = mysqli_fetch_assoc($result)) {
                     <li class="nav-item">
                             <a class="nav-link" href="index.php">Home</a>
                         </li>
-                        <li class="nav-item">
+                        <!-- <li class="nav-item">
                             <a class="nav-link" href="room-list.php">Rooms</a>
-                        </li>
+                        </li> -->
                         <li class="nav-item">
                             <a class="nav-link" href="hotels.php">Hotels</a>
                         </li>
@@ -183,7 +183,7 @@ while ($row = mysqli_fetch_assoc($result)) {
                             <a class="nav-link" href="gallery.php">Gallery</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="index.php#contact">Contact Us</a>
+                            <a class="nav-link" href="contact.php">Contact Us</a>
                         </li>   
                         <?php if (isLoggedIn()): ?>
                             <li class="nav-item dropdown">

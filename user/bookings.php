@@ -51,10 +51,10 @@ if (isset($_POST['edit_booking'])) {
     $adults = (int)$_POST['adults'];
     $children = (int)$_POST['children'];
 
-    // Validate inputs
+    // Validate dates
     $check_in_date = new DateTime($check_in);
     $check_out_date = new DateTime($check_out);
-    $now = new DateTime(); // Current time: May 26, 2025, 02:22 PM PKT
+    $now = new DateTime(); // Current time (timezone set in session.php)
 
     if ($check_out_date <= $check_in_date) {
         $error = "Check-out date and time must be after check-in.";
@@ -64,7 +64,7 @@ if (isset($_POST['edit_booking'])) {
         $error = "At least one adult is required.";
     } else {
         // Verify booking belongs to user and get room details
-        $sql = "SELECT b.*, r.price_per_night, r.capacity 
+        $sql = "SELECT b.*, r.price_per_hour, r.capacity 
                 FROM bookings b 
                 JOIN rooms r ON b.room_id = r.id 
                 WHERE b.id = ? AND b.user_id = ?";
@@ -102,7 +102,7 @@ if (isset($_POST['edit_booking'])) {
                     if ($interval->i > 0 || $interval->s > 0) {
                         $hours++; // Round up partial hours
                     }
-                    $total_price = $booking['price_per_night'] * $hours;
+                    $total_price = $booking['price_per_hour'] * $hours;
 
                     // Update booking
                     $sql = "UPDATE bookings 
@@ -124,13 +124,30 @@ if (isset($_POST['edit_booking'])) {
     }
 }
 
+// Update past bookings to 'completed' status and free up rooms
+$current_time = date('Y-m-d H:i:s'); // Uses timezone set in session.php
+$update_completed = "UPDATE bookings b 
+                    JOIN rooms r ON b.room_id = r.id
+                    JOIN hotels h ON b.hotel_id = h.id
+                    SET b.booking_status = 'completed', r.status = 'available'
+                    WHERE b.check_out_date < ? 
+                    AND b.booking_status NOT IN ('cancelled', 'completed')
+                    AND b.user_id = ?";
+$stmt = mysqli_prepare($conn, $update_completed);
+if ($stmt) {
+    mysqli_stmt_bind_param($stmt, "si", $current_time, $_SESSION['user_id']);
+    mysqli_stmt_execute($stmt);
+    mysqli_stmt_close($stmt);
+}
+
 // Get all bookings
 $user_id = $_SESSION['user_id'];
-$sql = "SELECT b.*, r.room_type, r.image_url, r.price_per_night 
+$sql = "SELECT b.*, r.room_type, r.image_url, r.price_per_hour, h.name as hotel_name, r.status as room_status
         FROM bookings b 
         JOIN rooms r ON b.room_id = r.id 
+        JOIN hotels h ON b.hotel_id = h.id 
         WHERE b.user_id = ? 
-        ORDER BY b.created_at DESC";
+        ORDER BY FIELD(b.booking_status, 'pending', 'confirmed', 'completed', 'cancelled'), b.created_at DESC";
 $stmt = mysqli_prepare($conn, $sql);
 mysqli_stmt_bind_param($stmt, "i", $user_id);
 mysqli_stmt_execute($stmt);
@@ -215,6 +232,10 @@ $bookings = mysqli_stmt_get_result($stmt);
         .status-cancelled {
             background-color: #f8d7da;
             color: #721c24;
+        }
+        .status-completed {
+            background-color: #17a2b8;
+            color: white;
         }
         .btn-cancel {
             background-color: #dc3545;
@@ -321,7 +342,8 @@ $bookings = mysqli_stmt_get_result($stmt);
                                 <div class="col-md-9">
                                     <div class="d-flex justify-content-between align-items-start">
                                         <div>
-                                            <h4><?php echo htmlspecialchars($booking['room_type']) . ' (Room #' . htmlspecialchars($booking['room_id']) . ')'; ?></h4>
+                                            <h4><?php echo ucfirst(str_replace('_', ' ', htmlspecialchars($booking['room_type']))); ?></h4>
+                                            <p class="mb-2"><i class="fas fa-hotel me-2"></i> <?php echo htmlspecialchars($booking['hotel_name']); ?></p>
                                             <span class="status-badge status-<?php echo strtolower($booking['booking_status']); ?>">
                                                 <?php echo ucfirst($booking['booking_status']); ?>
                                             </span>
@@ -364,36 +386,108 @@ $bookings = mysqli_stmt_get_result($stmt);
 
                         <!-- Edit Booking Modal -->
                         <div class="modal fade" id="editBookingModal<?php echo $booking['id']; ?>" tabindex="-1">
-                            <div class="modal-dialog">
-                                <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h5 class="modal-title">Edit Booking: <?php echo htmlspecialchars($booking['room_type']); ?></h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content border-0 shadow">
+                                    <div class="modal-header" style="background-color: #d4a017; color: white;">
+                                        <div class="w-100">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <div>
+                                                    <h5 class="modal-title mb-1">
+                                                        <i class="fas fa-edit me-2"></i>Edit Booking
+                                                    </h5>
+                                                    <p class="mb-0 small">
+                                                        <i class="fas fa-hotel me-2"></i><?php echo htmlspecialchars($booking['hotel_name']); ?>
+                                                        <span class="mx-2">•</span>
+                                                        <i class="fas fa-door-open me-1"></i><?php echo ucfirst(str_replace('_', ' ', htmlspecialchars($booking['room_type']))); ?>
+                                                    </p>
+                                                </div>
+                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="d-flex flex-wrap gap-3 mt-3 pt-2 border-top border-light border-opacity-25">
+                                                <div class="d-flex align-items-center">
+                                                    <span class="badge bg-light text-dark me-2">
+                                                        <i class="fas fa-calendar-day me-1"></i>
+                                                        <?php echo $check_in_date->format('M j, Y'); ?>
+                                                    </span>
+                                                    <i class="fas fa-arrow-right mx-2"></i>
+                                                    <span class="badge bg-light text-dark">
+                                                        <?php echo $check_out_date->format('M j, Y'); ?>
+                                                    </span>
+                                                </div>
+                                                <div class="badge bg-light text-dark">
+                                                    <i class="fas fa-clock me-1"></i>
+                                                    <?php echo $hours; ?> hours
+                                                </div>
+                                                <div class="badge bg-light text-dark">
+                                                    <i class="fas fa-users me-1"></i>
+                                                    <?php echo $booking['adults'] . ($booking['adults'] > 1 ? ' Adults' : ' Adult'); ?>
+                                                    <?php if($booking['children'] > 0): ?>
+                                                        + <?php echo $booking['children'] . ($booking['children'] > 1 ? ' Children' : ' Child'); ?>
+                                                    <?php endif; ?>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div class="modal-body">
-                                        <form method="POST" action="">
+                                    <div class="modal-body p-4">
+                                        <form method="POST" action="" class="needs-validation" novalidate>
                                             <input type="hidden" name="booking_id" value="<?php echo $booking['id']; ?>">
-                                            <div class="mb-3">
-                                                <label for="check_in_<?php echo $booking['id']; ?>" class="form-label">Check-in Date & Time *</label>
-                                                <input type="datetime-local" class="form-control" id="check_in_<?php echo $booking['id']; ?>" name="check_in" value="<?php echo date('Y-m-d\TH:i', strtotime($booking['check_in_date'])); ?>" required>
-                                            </div>
-                                            <div class="mb-3">
-                                                <label for="check_out_<?php echo $booking['id']; ?>" class="form-label">Check-out Date & Time *</label>
-                                                <input type="datetime-local" class="form-control" id="check_out_<?php echo $booking['id']; ?>" name="check_out" value="<?php echo date('Y-m-d\TH:i', strtotime($booking['check_out_date'])); ?>" required>
-                                            </div>
-                                            <div class="row">
-                                                <div class="col-md-6 mb-3">
-                                                    <label for="adults_<?php echo $booking['id']; ?>" class="form-label">Adults *</label>
-                                                    <input type="number" class="form-control" id="adults_<?php echo $booking['id']; ?>" name="adults" min="1" value="<?php echo $booking['adults']; ?>" required>
+                                            
+                                            <h6 class="mb-3 text-muted">Update Booking Details</h6>
+                                            
+                                            <div class="mb-4">
+                                                <div class="form-group mb-3">
+                                                    <label for="check_in_<?php echo $booking['id']; ?>" class="form-label fw-medium">
+                                                        <i class="fas fa-sign-in-alt me-2" style="color: #d4a017;"></i>Check-in Date & Time *
+                                                    </label>
+                                                    <div class="input-group">
+                                                        <span class="input-group-text bg-light"><i class="far fa-calendar-alt text-muted"></i></span>
+                                                        <input type="datetime-local" class="form-control" id="check_in_<?php echo $booking['id']; ?>" 
+                                                               name="check_in" value="<?php echo date('Y-m-d\TH:i', strtotime($booking['check_in_date'])); ?>" required>
+                                                    </div>
                                                 </div>
-                                                <div class="col-md-6 mb-3">
-                                                    <label for="children_<?php echo $booking['id']; ?>" class="form-label">Children</label>
-                                                    <input type="number" class="form-control" id="children_<?php echo $booking['id']; ?>" name="children" min="0" value="<?php echo $booking['children']; ?>" required>
+                                                
+                                                <div class="form-group mb-3">
+                                                    <label for="check_out_<?php echo $booking['id']; ?>" class="form-label fw-medium">
+                                                        <i class="fas fa-sign-out-alt me-2" style="color: #d4a017;"></i>Check-out Date & Time *
+                                                    </label>
+                                                    <div class="input-group">
+                                                        <span class="input-group-text bg-light"><i class="far fa-calendar-alt text-muted"></i></span>
+                                                        <input type="datetime-local" class="form-control" id="check_out_<?php echo $booking['id']; ?>" 
+                                                               name="check_out" value="<?php echo date('Y-m-d\TH:i', strtotime($booking['check_out_date'])); ?>" required>
+                                                    </div>
                                                 </div>
                                             </div>
-                                            <div class="modal-footer">
-                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                                <button type="submit" name="edit_booking" class="btn btn-edit">Save Changes</button>
+                                            
+                                            <div class="row g-3 mb-4">
+                                                <div class="col-md-6">
+                                                    <label for="adults_<?php echo $booking['id']; ?>" class="form-label fw-medium">
+                                                        <i class="fas fa-user me-2" style="color: #d4a017;"></i>Adults *
+                                                    </label>
+                                                    <div class="input-group">
+                                                        <span class="input-group-text bg-light"><i class="fas fa-user-friends text-muted"></i></span>
+                                                        <input type="number" class="form-control" id="adults_<?php echo $booking['id']; ?>" 
+                                                               name="adults" min="1" value="<?php echo $booking['adults']; ?>" required>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label for="children_<?php echo $booking['id']; ?>" class="form-label fw-medium">
+                                                        <i class="fas fa-child me-2" style="color: #d4a017;"></i>Children
+                                                    </label>
+                                                    <div class="input-group">
+                                                        <span class="input-group-text bg-light"><i class="fas fa-child text-muted"></i></span>
+                                                        <input type="number" class="form-control" id="children_<?php echo $booking['id']; ?>" 
+                                                               name="children" min="0" value="<?php echo $booking['children']; ?>" required>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="d-flex justify-content-between align-items-center pt-3 border-top mt-4">
+                                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                                                    <i class="fas fa-times me-2"></i>Cancel
+                                                </button>
+                                                <button type="submit" name="edit_booking" class="btn px-4" style="background-color: #d4a017; color: white; border: none;">
+                                                    <i class="fas fa-save me-2"></i>Save Changes
+                                                </button>
                                             </div>
                                         </form>
                                     </div>

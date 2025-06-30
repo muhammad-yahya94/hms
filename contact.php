@@ -8,7 +8,7 @@ require_once 'includes/session.php';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gallery - Jhang Hotels</title>
+    <title>Contact Us - Jhang Hotels</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome for icons -->
@@ -31,18 +31,34 @@ require_once 'includes/session.php';
             align-items: center;
             position: relative;
         }
-        .hero-section::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
+        .hero-content {
+            text-align: center;
             width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
         }
-        .hero-section .container {
-            position: relative;
-            z-index: 1;
+        .hero-section h1 {
+            font-size: 3.5rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .section-padding {
+            padding: 80px 0;
+        }
+        .contact-info {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        .contact-info i {
+            font-size: 2rem;
+            color: #d4a017;
+            margin-bottom: 15px;
+        }
+        .form-control, .form-select {
+            border: 1px solid #d4a017;
+            padding: 10px;
+            margin-bottom: 20px;
         }
         .navbar {
             font-family: 'Poppins', sans-serif;
@@ -109,35 +125,30 @@ require_once 'includes/session.php';
         .navbar-toggler[aria-expanded="true"] .navbar-toggler-icon {
             transform: rotate(90deg);
         }
-        .section-padding {
-            padding: 60px 0;
-        }
-        .gallery-img {
-            width: 100%;
-            height: 250px;
-            object-fit: cover;
-            border-radius: 10px;
-            transition: transform 0.3s ease;
-        }
-        .gallery-img:hover {
-            transform: scale(1.05);
-        }
-        .footer {
-            background-color: #1a1a1a;
-            color: white;
-            padding: 40px 0;
-        }
-        .btn-custom {
+        .btn-contact {
             background-color: #d4a017;
             color: white;
+            font-weight: bold;
+            padding: 12px 30px;
             border: none;
-            padding: 10px 20px;
             border-radius: 5px;
             transition: all 0.3s;
         }
-        .btn-custom:hover {
+        .btn-contact:hover {
             background-color: #b38b12;
             transform: translateY(-2px);
+        }
+        .map-container {
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        .map-container iframe {
+            width: 100%;
+            height: 100%;
+            min-height: 300px;
+            border: 0;
         }
     </style>
 </head>
@@ -152,7 +163,7 @@ require_once 'includes/session.php';
                 </button>
                 <div class="collapse navbar-collapse" id="navbarNav">
                     <ul class="navbar-nav ms-auto">
-                    <li class="nav-item">
+                        <li class="nav-item">
                             <a class="nav-link" href="index.php">Home</a>
                         </li>
                         <!-- <li class="nav-item">
@@ -168,7 +179,7 @@ require_once 'includes/session.php';
                             <a class="nav-link" href="gallery.php">Gallery</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="contact.php">Contact Us</a>
+                            <a class="nav-link active" href="contact.php">Contact Us</a>
                         </li>
                         <?php if (isLoggedIn()): ?>
                             <li class="nav-item dropdown">
@@ -196,88 +207,110 @@ require_once 'includes/session.php';
                 </div>
             </div>
         </nav>
-        <div class="container text-center">
-            <h1 class="display-4 fw-bold">Our Gallery</h1>
+        <div class="container">
+            <div class="hero-content">
+                <h1>Contact Us</h1>
+                <p class="lead">We'd love to hear from you. Get in touch with our team.</p>
+            </div>
         </div>
     </section>
 
-    <!-- Gallery Section -->
+    <!-- Contact Section -->
     <section class="section-padding">
         <div class="container">
-            <h2 class="text-center mb-5">Explore Our Hotels</h2>
-            <div class="row g-4">
-                <div class="col-md-4">
-                    <img src="https://images.unsplash.com/photo-1578683010236-d716f9a3f461?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80" class="gallery-img" alt="Hotel Room">
+            <div class="row">
+                <div class="col-lg-6 mb-4">
+                    <h2 class="mb-4">Get In Touch</h2>
+                    <p>Have questions or need assistance? Fill out the form and our team will get back to you as soon as possible.</p>
+                    
+                    <form action="process_contact.php" method="POST" class="mt-5">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <input type="text" class="form-control" name="name" placeholder="Your Name" required>
+                            </div>
+                            <div class="col-md-6">
+                                <input type="email" class="form-control" name="email" placeholder="Your Email" required>
+                            </div>
+                        </div>
+                        <input type="text" class="form-control" name="subject" placeholder="Subject" required>
+                        <textarea class="form-control" name="message" rows="5" placeholder="Your Message" required></textarea>
+                        <button type="submit" class="btn-contact">Send Message</button>
+                    </form>
                 </div>
-                <div class="col-md-4">
-                    <img src="https://images.unsplash.com/photo-1445019980597-93fa8acb246c?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80" class="gallery-img" alt="Hotel Lobby">
-                </div>
-                <div class="col-md-4">
-                    <img src="https://images.unsplash.com/photo-1611892440504-42a792e24d32?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80" class="gallery-img" alt="Hotel Suite">
-                </div>
-                <div class="col-md-4">
-                    <img src="https://images.unsplash.com/photo-1519449556851-5720b33024e7?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80" class="gallery-img" alt="Hotel Pool">
-                </div>
-                <div class="col-md-4">
-                    <img src="https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80" class="gallery-img" alt="Hotel Restaurant">
-                </div>
-                <div class="col-md-4">
-                    <img src="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?ixlib=rb-1.2.1&auto=format&fit=crop&w=1350&q=80" class="gallery-img" alt="Hotel Exterior">
+                
+                <div class="col-lg-6">
+                    <div class="row">
+                        <div class="col-md-6 mb-4">
+                            <div class="contact-info text-center">
+                                <i class="fas fa-map-marker-alt"></i>
+                                <h4>Our Location</h4>
+                                <p>123 Hotel Street, Jhang Sadar<br>Jhang, Punjab, Pakistan</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-4">
+                            <div class="contact-info text-center">
+                                <i class="fas fa-phone-alt"></i>
+                                <h4>Phone Number</h4>
+                                <p>+92 300 1234567<br>+92 300 7654321</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-4">
+                            <div class="contact-info text-center">
+                                <i class="fas fa-envelope"></i>
+                                <h4>Email Address</h4>
+                                <p>info@jhanghotels.com<br>support@jhanghotels.com</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-4">
+                            <div class="contact-info text-center">
+                                <i class="fas fa-clock"></i>
+                                <h4>Working Hours</h4>
+                                <p>Monday - Sunday<br>24/7</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="map-container">
+                        <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3418.120662981952!2d72.32212331513202!3d31.07005098151656!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3923788a0a0a0a0a%3A0x0!2zMzHCsDA0JzEyLjIiTiA3MsKwMTknMjUuOCJF!5e0!3m2!1sen!2s!4v1620000000000!5m2!1sen!2s" allowfullscreen="" loading="lazy"></iframe>
+                    </div>
                 </div>
             </div>
         </div>
     </section>
 
     <!-- Footer -->
-    <footer class="footer">
+    <footer class="bg-dark text-white py-4">
         <div class="container">
             <div class="row">
-                <div class="col-md-4">
-                    <h5>Jhang Hotels</h5>
-                    <p>Experience luxury and comfort in the heart of Jhang.</p>
+                <div class="col-md-4 mb-4">
+                    <h5>About Jhang Hotels</h5>
+                    <p>Experience luxury and comfort at our premium hotels in Jhang. We provide exceptional service and unforgettable experiences.</p>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-4 mb-4">
                     <h5>Quick Links</h5>
                     <ul class="list-unstyled">
-                        <li><a href="room-list.php" class="text-white text-decoration-none">Rooms</a></li>
-                        <li><a href="about.php" class="text-white text-decoration-none">About Us</a></li>
-                        <li><a href="gallery.php" class="text-white text-decoration-none">Gallery</a></li>
-                        <li><a href="index.php#contact" class="text-white text-decoration-none">Contact Us</a></li>
+                        <li><a href="index.php" class="text-white">Home</a></li>
+                        <li><a href="hotels.php" class="text-white">Hotels</a></li>
+                        <li><a href="about.php" class="text-white">About Us</a></li>
+                        <li><a href="gallery.php" class="text-white">Gallery</a></li>
+                        <li><a href="contact.php" class="text-white">Contact</a></li>
                     </ul>
                 </div>
                 <div class="col-md-4">
-                    <h5>Follow Us</h5>
+                    <h5>Connect With Us</h5>
                     <div class="social-links">
                         <a href="#" class="text-white me-2"><i class="fab fa-facebook-f"></i></a>
                         <a href="#" class="text-white me-2"><i class="fab fa-twitter"></i></a>
                         <a href="#" class="text-white me-2"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="text-white"><i class="fab fa-linkedin-in"></i></a>
                     </div>
+                    <p class="mt-3">© 2025 Jhang Hotels. All rights reserved.</p>
                 </div>
-            </div>
-            <hr>
-            <div class="text-center">
-                <p class="mb-0">© <?php echo date('Y'); ?> Jhang Hotels. All rights reserved.</p>
             </div>
         </div>
     </footer>
 
-    <!-- Bootstrap JS -->
+    <!-- Bootstrap JS and dependencies -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Custom JavaScript for Navbar Scroll Effect -->
-    <script>
-        window.addEventListener('scroll', function() {
-            const navbar = document.querySelector('.navbar');
-            const heroSection = document.querySelector('.hero-section');
-            const heroBottom = heroSection.offsetTop + heroSection.offsetHeight - 50;
-
-            if (window.scrollY >= heroBottom) {
-                navbar.classList.remove('navbar-transparent');
-                navbar.classList.add('navbar-dark-bg');
-            } else {
-                navbar.classList.add('navbar-transparent');
-                navbar.classList.remove('navbar-dark-bg');
-            }
-        });
-    </script>
 </body>
 </html>

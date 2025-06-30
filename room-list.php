@@ -84,7 +84,7 @@ if (!empty($city)) {
 }
 
 if ($max_price > 0) {
-    $where_conditions[] = "r.price_per_night <= ?";
+    $where_conditions[] = "r.price_per_hour <= ?";
     $params[] = $max_price;
     $types .= "d";
 }
@@ -402,12 +402,12 @@ $rooms_found = mysqli_num_rows($result) > 0;
                     <li class="nav-item">
                             <a class="nav-link" href="index.php">Home</a>
                         </li>
-                        <li class="nav-item">
+                        <!-- <li class="nav-item">
                             <a class="nav-link" href="room-list.php">Rooms</a>
-                        </li>
+                        </li> -->
                         <li class="nav-item">
                             <a class="nav-link" href="hotels.php">Hotels</a>
-                        </li>
+                        </li>    
                         <li class="nav-item">
                             <a class="nav-link" href="about.php">About Us</a>
                         </li>
@@ -415,7 +415,7 @@ $rooms_found = mysqli_num_rows($result) > 0;
                             <a class="nav-link" href="gallery.php">Gallery</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="index.php#contact">Contact Us</a>
+                            <a class="nav-link" href="contact.php">Contact Us</a>
                         </li>
                         <?php if (isLoggedIn()): ?>
                             <li class="nav-item dropdown">
@@ -588,7 +588,7 @@ $rooms_found = mysqli_num_rows($result) > 0;
                                     <?php else: ?>
                                         <button class="btn btn-custom" disabled><?php echo ucfirst($room['display_status']); ?></button>
                                     <?php endif; ?>
-                                    <div class="price-badge">PKR <?php echo number_format($room['price_per_night'], 2); ?>/Hour</div>
+                                    <div class="price-badge">PKR <?php echo number_format($room['price_per_hour'], 2); ?>/Hour</div>
                                     <div class="status-badge <?php echo $room['display_status'] == 'available' ? 'status-available' : ($room['display_status'] == 'booked' ? 'status-booked' : 'status-maintenance'); ?>">
                                         <?php echo ucfirst(htmlspecialchars($room['display_status'])); ?>
                                     </div>

@@ -44,9 +44,10 @@ $result = mysqli_stmt_get_result($stmt);
 $confirmed_bookings = mysqli_fetch_assoc($result)['confirmed_bookings'];
 
 // Recent bookings
-$sql = "SELECT b.*, r.room_type, r.image_url 
+$sql = "SELECT b.*, r.room_type, r.image_url, h.name as hotel_name 
         FROM bookings b 
         JOIN rooms r ON b.room_id = r.id 
+        JOIN hotels h ON b.hotel_id = h.id 
         WHERE b.user_id = ? 
         ORDER BY b.created_at DESC 
         LIMIT 5";
@@ -230,7 +231,12 @@ $recent_bookings = mysqli_stmt_get_result($stmt);
                                     <img src="<?php echo htmlspecialchars($booking['image_url']); ?>" alt="<?php echo htmlspecialchars($booking['room_type']); ?>" onerror="this.src='https://images.unsplash.com/photo-1618773928121-c32242e63f39';">
                                 </div>
                                 <div class="col-md-7">
-                                    <h5><?php echo htmlspecialchars($booking['room_type']); ?></h5>
+                                    <h5 class="mb-1">
+                                        <i class="fas fa-hotel text-muted me-1"></i><?php echo htmlspecialchars($booking['hotel_name']); ?>
+                                    </h5>
+                                    <p class="text-muted mb-1">
+                                        <i class="fas fa-door-open me-1"></i><?php echo ucfirst(str_replace('_', ' ', htmlspecialchars($booking['room_type']))); ?>
+                                    </p>
                                     <p class="mb-1">
                                         <i class="fas fa-calendar"></i> 
                                         <?php echo date('M d, Y', strtotime($booking['check_in_date'])); ?> - 

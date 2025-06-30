@@ -13,23 +13,46 @@ $success = '';
 $user_id = $_SESSION['user_id'];
 $current_time = date('Y-m-d H:i:s'); // Current time: 2025-06-11 17:00:00 PKT
 
-// Check for active booking with 'booked' status
+// Check for any booking where checkout date is in the future
 $active_booking = null;
-$sql = "SELECT b.hotel_id, h.name AS hotel_name 
+$sql = "SELECT b.hotel_id, h.name AS hotel_name, b.check_out_date 
         FROM bookings b 
         JOIN hotels h ON b.hotel_id = h.id 
         WHERE b.user_id = ? 
-        AND b.booking_status = 'confirmed' 
-        AND b.check_in_date <= ? 
         AND b.check_out_date >= ? 
+        ORDER BY b.check_out_date DESC 
         LIMIT 1";
 $stmt = mysqli_prepare($conn, $sql);
 if ($stmt) {
-    mysqli_stmt_bind_param($stmt, "iss", $user_id, $current_time, $current_time);
+    mysqli_stmt_bind_param($stmt, "is", $user_id, $current_time);
     mysqli_stmt_execute($stmt);
     $result = mysqli_stmt_get_result($stmt);
     $active_booking = mysqli_fetch_assoc($result);
     mysqli_stmt_close($stmt);
+    
+    // If no active booking found, check for any past bookings
+    if (!$active_booking) {
+        $sql = "SELECT b.hotel_id, h.name AS hotel_name, b.check_out_date 
+                FROM bookings b 
+                JOIN hotels h ON b.hotel_id = h.id 
+                WHERE b.user_id = ? 
+                ORDER BY b.check_out_date DESC 
+                LIMIT 1";
+        $stmt = mysqli_prepare($conn, $sql);
+        if ($stmt) {
+            mysqli_stmt_bind_param($stmt, "i", $user_id);
+            mysqli_stmt_execute($stmt);
+            $result = mysqli_stmt_get_result($stmt);
+            $past_booking = mysqli_fetch_assoc($result);
+            mysqli_stmt_close($stmt);
+            
+            if ($past_booking) {
+                $error = "Your last booking ended on " . date('M d, Y', strtotime($past_booking['check_out_date'])) . ". Please book a room to order food.";
+            } else {
+                $error = "You don't have any bookings. Please book a room to order food.";
+            }
+        }
+    }
 } else {
     $error = "Error checking booking status: " . mysqli_error($conn);
 }
@@ -245,26 +268,24 @@ if (!empty($active_booking)) {
                 <h2 class="mb-4">Food Menu<?php echo !empty($active_booking) ? ' - ' . htmlspecialchars($active_booking['hotel_name']) : ''; ?></h2>
 
                 <?php if ($error): ?>
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        <?php echo htmlspecialchars($error); ?>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    <div class="alert alert-warning">
+                        <?php echo $error; ?>
+                        <?php if (strpos($error, 'booking has ended') !== false || strpos($error, 'You must have an active room booking') !== false): ?>
+                            <div class="mt-2">
+                                <a href="../room-list.php" class="btn btn-sm btn-primary">Book a Room</a>
+                            </div>
+                        <?php endif; ?>
                     </div>
-                <?php endif; ?>
-
-                <?php if ($success): ?>
-                    <div class="alert alert-success alert-dismissible fade show" role="alert">
-                        <?php echo $success; ?>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                <?php endif; ?>
-
-                <?php if (empty($active_booking)): ?>
+                <?php elseif (empty($active_booking)): ?>
                     <div class="alert alert-info">
                         You don't have an active room booking with 'confirmed' status. Please <a href="../room-list.php" class="alert-link">book a room</a> to order food.
+                        <div class="mt-2">
+                            <a href="../room-list.php" class="btn btn-sm btn-primary">Book a Room</a>
+                        </div>
                     </div>
                 <?php elseif (empty($menu_items)): ?>
                     <div class="alert alert-info">
-                        No food items are currently available at this hotel.
+                        No food items are currently available at this hotel. Please check back later.
                     </div>
                 <?php else: ?>
                     <form method="POST" action="" id="orderForm" class="<?php echo empty($active_booking) ? 'disabled-form' : ''; ?>">

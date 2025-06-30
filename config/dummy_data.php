@@ -122,7 +122,7 @@ foreach ($hotel_ids as $hotel_id) {
         $description = "Comfortable " . ucfirst(str_replace('_', ' ', $room_type)) . " room with {$amenities[$index]}";
         $image_url = "https://images.unsplash.com/photo-" . rand(1000000000000, 9999999999999);
         
-        $sql = "INSERT INTO rooms (hotel_id, room_type, description, price_per_night, capacity, image_url, amenities, status) 
+        $sql = "INSERT INTO rooms (hotel_id, room_type, description, price_per_hour, capacity, image_url, amenities, status) 
                 VALUES (?, ?, ?, ?, ?, ?, ?, 'available')";
         $stmt = mysqli_prepare($conn, $sql);
         mysqli_stmt_bind_param($stmt, "issdiss", 
@@ -163,15 +163,15 @@ for ($i = 0; $i < 20; $i++) {
     $children = rand(0, 2);
     
     // Calculate total price
-    $sql = "SELECT price_per_night FROM rooms WHERE id = ?";
+    $sql = "SELECT price_per_hour FROM rooms WHERE id = ?";
     $stmt = mysqli_prepare($conn, $sql);
     mysqli_stmt_bind_param($stmt, "i", $room_id);
     mysqli_stmt_execute($stmt);
     $result = mysqli_stmt_get_result($stmt);
-    $price_per_night = mysqli_fetch_assoc($result)['price_per_night'];
+    $price_per_hour = mysqli_fetch_assoc($result)['price_per_hour'];
     
     $nights = (strtotime($check_out) - strtotime($check_in)) / (60 * 60 * 24);
-    $total_price = $price_per_night * $nights;
+    $total_price = $price_per_hour * $nights;
     
     $status = $booking_statuses[array_rand($booking_statuses)];
     

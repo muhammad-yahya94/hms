@@ -147,7 +147,7 @@ CREATE TABLE `rooms` (
   `hotel_id` int(11) NOT NULL,
   `room_type` enum('standard','deluxe','suite','presidential_suite') NOT NULL,
   `description` text DEFAULT NULL,
-  `price_per_night` decimal(10,2) NOT NULL,
+  `price_per_hour` decimal(10,2) NOT NULL,
   `capacity` int(11) NOT NULL,
   `image_url` varchar(255) DEFAULT NULL,
   `amenities` text DEFAULT NULL,
@@ -160,7 +160,7 @@ CREATE TABLE `rooms` (
 -- Dumping data for table `rooms`
 --
 
-INSERT INTO `rooms` (`id`, `hotel_id`, `room_type`, `description`, `price_per_night`, `capacity`, `image_url`, `amenities`, `status`, `created_at`, `updated_at`) VALUES
+INSERT INTO `rooms` (`id`, `hotel_id`, `room_type`, `description`, `price_per_hour`, `capacity`, `image_url`, `amenities`, `status`, `created_at`, `updated_at`) VALUES
 (1, 1, 'standard', 'standard room in Ali Hotel No. 1.', 4800.00, 2, 'includes/images/room_standard_1_1.jpg', 'WiFi, TV, AC', 'booked', '2025-05-27 04:38:53', '2025-06-11 12:05:03'),
 (2, 1, 'deluxe', 'deluxe room in Ali Hotel No. 1.', 7200.00, 3, 'includes/images/room_deluxe_1_2.jpg', 'WiFi, TV, AC, Minibar', 'available', '2025-05-27 04:38:53', '2025-05-27 04:43:08'),
 (3, 2, 'standard', 'standard room in Zainab Hotel No. 1.', 4800.00, 2, 'includes/images/room_standard_2_1.jpg', 'WiFi, TV, AC', 'available', '2025-05-27 04:38:53', '2025-05-31 02:17:07'),

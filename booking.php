@@ -46,7 +46,7 @@ if ($check_out_date <= $check_in_date) {
     if ($interval->i > 0 || $interval->s > 0) {
         $hours++; // Round up partial hours
     }
-    $total_price = $room['price_per_night'] * $hours;
+    $total_price = $room['price_per_hour'] * $hours;
 }
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && !$error) {
@@ -220,7 +220,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && !$error) {
                         
                         <div class="price-details">
                             <h4>Price Details</h4>
-                            <p><strong>Price per Hour:</strong> PKR <?php echo number_format($room['price_per_night'], 2); ?></p>
+                            <p><strong>Price per Hour:</strong> PKR <?php echo number_format($room['price_per_hour'], 2); ?></p>
                             <p><strong>Number of Hours:</strong> <?php echo $hours; ?></p>
                             <hr>
                             <h5><strong>Total Price:</strong> PKR <?php echo number_format($total_price, 2); ?></h5>

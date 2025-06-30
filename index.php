@@ -12,7 +12,7 @@ while ($row = mysqli_fetch_assoc($result)) {
 
 // Fetch room categories
 $room_categories = [];
-$sql = "SELECT DISTINCT room_type, MIN(price_per_night) as min_price, MAX(price_per_night) as max_price 
+$sql = "SELECT DISTINCT room_type, MIN(price_per_hour) as min_price, MAX(price_per_hour) as max_price 
         FROM rooms GROUP BY room_type ORDER BY min_price";
 $result = mysqli_query($conn, $sql);
 while ($row = mysqli_fetch_assoc($result)) {
@@ -228,9 +228,9 @@ $check_out = isset($_GET['check_out']) ? $_GET['check_out'] : date('Y-m-d 12:00'
                     <li class="nav-item">
                             <a class="nav-link" href="index.php">Home</a>
                         </li>
-                        <li class="nav-item">
+                        <!-- <li class="nav-item">
                             <a class="nav-link" href="room-list.php">Rooms</a>
-                        </li>
+                        </li> -->
                         <li class="nav-item">
                             <a class="nav-link" href="hotels.php">Hotels</a>
                         </li>
@@ -241,7 +241,7 @@ $check_out = isset($_GET['check_out']) ? $_GET['check_out'] : date('Y-m-d 12:00'
                             <a class="nav-link" href="gallery.php">Gallery</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="#contact">Contact Us</a>
+                            <a class="nav-link" href="contact.php">Contact Us</a>
                         </li>
                         <?php if (isLoggedIn()): ?>
                             <li class="nav-item dropdown">
@@ -374,7 +374,7 @@ $check_out = isset($_GET['check_out']) ? $_GET['check_out'] : date('Y-m-d 12:00'
             <div class="row">
                 <div class="col-lg-6 mb-4">
                     <h2>Our Story</h2>
-                    <p>Jhang Hotels was founded in 2010 with a vision to redefine luxury hospitality in Jhang, Pakistan. Our journey began with a single property, and today we are proud to offer a collection of premium hotels that blend modern elegance with the rich cultural heritage of the region.</p>
+                    <p>Jhang Hotels was founded in 2025 with a vision to redefine luxury hospitality in Jhang, Pakistan. Our journey began with a single property, and today we are proud to offer a collection of premium hotels that blend modern elegance with the rich cultural heritage of the region.</p>
                     <p>Our commitment to excellence has earned us a reputation for unparalleled service, making us the preferred choice for travelers seeking comfort and sophistication.</p>
                 </div>
                 <div class="col-lg-6 mb-4">
