@@ -2,7 +2,6 @@
 require_once '../config/database.php';
 require_once '../includes/session.php';
 
-// Require admin role
 requireAdmin();
 
 $error = '';
@@ -206,7 +205,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_employee'])) {
                 $employee_sql = "UPDATE hotel_employee SET hotel_id = ?, designation = ?, department = ?, salary = ?, joining_date = ?, shift_timing = ?, status = ? 
                                  WHERE id = ? AND hotel_id IN (SELECT id FROM hotels WHERE vendor_id = ?)";
                 $employee_stmt = mysqli_prepare($conn, $employee_sql);
-                mysqli_stmt_bind_param($employee_stmt, "issdsssi", $hotel_id, $designation, $department, $salary, $joining_date, $shift_timing, $status, $employee_id, $admin_id);
+                mysqli_stmt_bind_param($employee_stmt, "issdsssii", $hotel_id, $designation, $department, $salary, $joining_date, $shift_timing, $status, $employee_id, $admin_id);
                 mysqli_stmt_execute($employee_stmt);
 
                 mysqli_commit($conn);
@@ -392,29 +391,29 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['delete_employee'])) {
                     <a class="nav-link active" href="users.php"><i class="fas fa-users"></i> Employees</a>
                     <a class="nav-link" href="reservations.php"><i class="fas fa-calendar-check"></i> Reservations</a>
                     <a class="nav-link" href="food_orders.php"><i class="fas fa-shopping-cart"></i> Food Orders</a>
-                    <a class="nav-link" href="chat.php">
+                    <a class="nav-link position-relative" href="chat.php">
                         <i class="fas fa-comments"></i> Customer Chats
-                        <?php 
-                        // Get unread message count for the admin's hotel
+                        <?php
+                        // Get unread message count for the admin
                         $unread_count = 0;
+                        $admin_id = $_SESSION['user_id'];
                         $stmt = $conn->prepare("
                             SELECT COUNT(m.id) as unread_count
                             FROM messages m
                             JOIN conversations c ON m.conversation_id = c.id
-                            JOIN hotels h ON c.hotel_id = h.id
-                            WHERE h.vendor_id = ? AND m.sender_type = 'user' AND m.is_read = FALSE
+                            WHERE c.admin_id = ? AND m.sender_type = 'user' AND m.is_read = FALSE
                         ");
-                        if ($stmt) {
-                            $stmt->bind_param("i", $admin_id);
-                            $stmt->execute();
-                            $result = $stmt->get_result();
-                            if ($row = $result->fetch_assoc()) {
-                                $unread_count = $row['unread_count'];
-                            }
-                            $stmt->close();
+                        $stmt->bind_param("i", $admin_id);
+                        $stmt->execute();
+                        $result = $stmt->get_result();
+                        if ($row = $result->fetch_assoc()) {
+                            $unread_count = $row['unread_count'];
                         }
+                        $stmt->close();
                         if ($unread_count > 0): ?>
-                            <span class="badge bg-danger ms-2"><?php echo $unread_count; ?></span>
+                            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6rem;">
+                                <?php echo $unread_count; ?>
+                            </span>
                         <?php endif; ?>
                     </a>
                     <a class="nav-link" href="../index.php" target="_blank"><i class="fas fa-external-link-alt"></i> View Site</a>

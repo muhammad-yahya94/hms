@@ -2,9 +2,13 @@
 require_once 'config/database.php';
 require_once 'includes/session.php';
 
-// Fetch featured hotels
+// Fetch featured hotels with their vendor_id (admin_id)
 $featured_hotels = [];
-$sql = "SELECT * FROM hotels ORDER BY id DESC LIMIT 3";
+$sql = "SELECT h.*, u.id as admin_id 
+        FROM hotels h 
+        LEFT JOIN users u ON h.vendor_id = u.id 
+        WHERE u.role = 'admin' 
+        ORDER BY h.id DESC LIMIT 3";
 $result = mysqli_query($conn, $sql);
 while ($row = mysqli_fetch_assoc($result)) {
     $featured_hotels[] = $row;
@@ -484,9 +488,15 @@ $check_out = isset($_GET['check_out']) ? $_GET['check_out'] : date('Y-m-d 12:00'
                                 <a href="room-list.php?hotel=<?php echo $hotel['id']; ?>" class="btn btn-custom flex-grow-1">
                                     <i class="fas fa-hotel me-1"></i> View Rooms
                                 </a>
-                                <a href="chat.php?hotel_id=<?php echo $hotel['id']; ?>" class="chat-link" title="Chat with hotel">
-                                    <i class="fas fa-comment-dots"></i>
-                                </a>
+                                <?php if (!empty($hotel['admin_id'])): ?>
+                                    <a href="chat.php?admin_id=<?php echo $hotel['admin_id']; ?>" class="chat-link" title="Chat with admin">
+                                        <i class="fas fa-comment-dots"></i>
+                                    </a>
+                                <?php else: ?>
+                                    <span class="chat-link disabled" title="No admin available">
+                                        <i class="fas fa-comment-dots"></i>
+                                    </span>
+                                <?php endif; ?>
                             </div>
                         </div>
                     </div>

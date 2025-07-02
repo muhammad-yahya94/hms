@@ -103,7 +103,7 @@ if ($result) {
     error_log("Error fetching confirmed bookings: " . mysqli_error($conn));
 }
 
-// Cancelled Bookings for current admin's hotels
+// Cancelled Bookotions for current admin's hotels
 $stmt = mysqli_prepare($conn, "SELECT COUNT(*) as total FROM bookings b JOIN hotels h ON b.hotel_id = h.id WHERE h.vendor_id = ? AND b.booking_status = 'cancelled'");
 mysqli_stmt_bind_param($stmt, "i", $user_id);
 mysqli_stmt_execute($stmt);
@@ -245,22 +245,22 @@ $recent_bookings = mysqli_stmt_get_result($stmt) ?: [];
                     <a class="nav-link position-relative" href="chat.php">
                         <i class="fas fa-comments"></i> Customer Chats
                         <?php
-                        // Get unread message count for the admin's hotel
+                        // Get unread message count for the admin
                         $unread_count = 0;
-                        $vendor_id = $_SESSION['user_id'];
+                        $admin_id = $_SESSION['user_id'];
                         $stmt = $conn->prepare("
                             SELECT COUNT(m.id) as unread_count
                             FROM messages m
                             JOIN conversations c ON m.conversation_id = c.id
-                            JOIN hotels h ON c.hotel_id = h.id
-                            WHERE h.vendor_id = ? AND m.sender_type = 'user' AND m.is_read = FALSE
+                            WHERE c.admin_id = ? AND m.sender_type = 'user' AND m.is_read = FALSE
                         ");
-                        $stmt->bind_param("i", $vendor_id);
+                        $stmt->bind_param("i", $admin_id);
                         $stmt->execute();
                         $result = $stmt->get_result();
                         if ($row = $result->fetch_assoc()) {
                             $unread_count = $row['unread_count'];
                         }
+                        $stmt->close();
                         if ($unread_count > 0): ?>
                             <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6rem;">
                                 <?php echo $unread_count; ?>

@@ -12,19 +12,8 @@ if ($_SESSION['role'] !== 'admin') {
     exit();
 }
 
-// Get admin's hotel ID
+// Get admin ID
 $admin_id = $_SESSION['user_id'];
-$hotel_id = 0;
-
-// Get hotel managed by this admin
-$stmt = $conn->prepare("SELECT id FROM hotels WHERE vendor_id = ? LIMIT 1");
-$stmt->bind_param("i", $admin_id);
-$stmt->execute();
-$result = $stmt->get_result();
-
-if ($hotel = $result->fetch_assoc()) {
-    $hotel_id = $hotel['id'];
-}
 
 // Function to check if the current admin has access to a specific hotel
 function hasAccessToHotel($hotelId) {
@@ -45,8 +34,7 @@ function hasAccessToConversation($conversationId) {
     $stmt = $conn->prepare("
         SELECT c.id 
         FROM conversations c
-        JOIN hotels h ON c.hotel_id = h.id
-        WHERE c.id = ? AND h.vendor_id = ?
+        WHERE c.id = ? AND c.admin_id = ?
     ");
     $stmt->bind_param("ii", $conversationId, $admin_id);
     $stmt->execute();

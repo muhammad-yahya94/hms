@@ -1,3 +1,17 @@
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+START TRANSACTION;
+SET time_zone = "+00:00";
+
+--
+-- Database: `hms_db`
+--
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `bookings`
+--
+
 CREATE TABLE `bookings` (
   `id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
@@ -15,39 +29,49 @@ CREATE TABLE `bookings` (
   `check_out` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `bookings`
+--
+
 INSERT INTO `bookings` (`id`, `user_id`, `hotel_id`, `room_id`, `check_in_date`, `check_out_date`, `adults`, `children`, `total_price`, `booking_status`, `created_at`, `status`, `check_in`, `check_out`) VALUES
-(1, 5, 1, 1, '2025-05-26 13:41:00', '2025-05-26 16:41:00', 3, 1, 600.00, 'completed', '2025-05-27 04:38:53', 'pending', NULL, NULL),
+(1, 5, 1, 1, '2025-05-26 13:41:00', '2025-05-26 16:41:00', 3, 1, 600.00, 'pending', '2025-05-27 04:38:53', 'pending', NULL, NULL),
 (2, 5, 2, 4, '2025-05-25 11:29:00', '2025-05-25 16:29:00', 3, 1, 1000.00, 'completed', '2025-05-27 04:38:53', 'confirmed', '2025-05-25 11:29:00', '2025-05-25 16:29:00'),
 (33, 3, 1, 1, '2025-05-30 03:46:00', '2025-05-31 03:46:00', 2, 0, 115200.00, 'cancelled', '2025-05-30 01:47:39', 'pending', NULL, NULL),
 (34, 2, 1, 1, '2025-05-31 04:17:00', '2025-06-01 04:17:00', 2, 0, 115200.00, 'cancelled', '2025-05-31 02:17:57', 'pending', NULL, NULL),
 (35, 3, 1, 1, '2025-06-01 04:21:00', '2025-06-02 04:21:00', 2, 0, 4800.00, 'cancelled', '2025-05-31 02:21:46', 'pending', NULL, NULL),
 (36, 3, 1, 1, '2025-06-11 13:25:00', '2025-06-12 13:25:00', 2, 0, 115200.00, 'completed', '2025-06-11 11:25:11', 'pending', NULL, NULL),
-(37, 3, 2, 3, '2025-06-30 07:31:00', '2025-06-30 11:34:00', 2, 0, 1000.00, 'completed', '2025-06-30 05:31:12', 'pending', NULL, NULL),
-(38, 3, 1, 1, '2025-07-01 08:39:00', '2025-07-02 08:39:00', 2, 0, 115200.00, 'completed', '2025-07-01 03:39:53', 'pending', NULL, NULL),
-(39, 3, 1, 2, '2025-07-01 08:43:00', '2025-07-02 08:43:00', 2, 0, 172800.00, 'completed', '2025-07-01 03:43:18', 'pending', NULL, NULL),
-(40, 3, 2, 4, '2025-07-02 15:02:00', '2025-07-03 15:02:00', 2, 0, 172800.00, 'pending', '2025-07-02 10:02:18', 'pending', NULL, NULL);
+(37, 3, 2, 3, '2025-06-30 07:31:00', '2025-06-30 11:34:00', 2, 0, 1000.00, 'completed', '2025-06-30 05:31:12', 'pending', NULL, NULL);
 
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `conversations`
+--
 
 CREATE TABLE `conversations` (
   `id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
-  `admin_id` int(11) NOT NULL,
+  `hotel_id` int(11) NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `conversations`
+--
 
-INSERT INTO `conversations` (`id`, `user_id`, `admin_id`, `created_at`, `updated_at`) VALUES
+INSERT INTO `conversations` (`id`, `user_id`, `hotel_id`, `created_at`, `updated_at`) VALUES
 (1, 4, 2, '2025-06-30 08:06:24', '2025-06-30 09:16:39'),
 (2, 4, 1, '2025-06-30 08:25:11', '2025-06-30 08:25:11'),
 (3, 2, 2, '2025-06-30 08:43:32', '2025-06-30 08:43:32'),
 (4, 3, 2, '2025-06-30 09:09:02', '2025-06-30 09:09:02'),
-(5, 3, 1, '2025-06-30 09:09:13', '2025-07-02 10:56:47'),
-(6, 1, 15, '2025-07-02 10:50:08', '2025-07-02 10:50:21'),
-(7, 3, 15, '2025-07-02 10:51:53', '2025-07-02 10:52:02'),
-(8, 5, 1, '2025-07-02 11:42:53', '2025-07-02 11:45:16'),
-(9, 5, 2, '2025-07-02 11:43:14', '2025-07-02 11:43:14');
+(5, 3, 1, '2025-06-30 09:09:13', '2025-06-30 09:09:13');
 
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `food_orders`
+--
 
 CREATE TABLE `food_orders` (
   `id` int(11) NOT NULL,
@@ -60,6 +84,9 @@ CREATE TABLE `food_orders` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `food_orders`
+--
 
 INSERT INTO `food_orders` (`id`, `user_id`, `hotel_id`, `menu_item_id`, `quantity`, `total_price`, `order_status`, `created_at`) VALUES
 (3, 3, 1, 4, 1, 200.00, 'delivered', '2025-06-11 11:40:48'),
@@ -70,6 +97,11 @@ INSERT INTO `food_orders` (`id`, `user_id`, `hotel_id`, `menu_item_id`, `quantit
 (8, 3, 2, 2, 2, 300.00, 'delivered', '2025-06-30 05:49:21'),
 (9, 3, 2, 1, 2, 400.00, 'delivered', '2025-06-30 06:03:32');
 
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `hotels`
+--
 
 CREATE TABLE `hotels` (
   `id` int(11) NOT NULL,
@@ -87,12 +119,19 @@ CREATE TABLE `hotels` (
   `average_rating` decimal(3,2) DEFAULT NULL COMMENT 'Stores the average rating (1.00-5.00) for the hotel'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `hotels`
+--
 
 INSERT INTO `hotels` (`id`, `name`, `description`, `address`, `city`, `phone`, `email`, `website`, `image_url`, `created_at`, `updated_at`, `vendor_id`, `average_rating`) VALUES
 (1, 'Ali Hotel No. 1', 'A luxurious hotel in Jhang owned by Ali.', '1010 St, Jhang', 'Jhang', '0300000101', 'alihotelno.1@jhanghotels.com', 'www.alihotelno.1.com', 'includes/images/ali_hotel_no._1.jpg', '0000-00-00 00:00:00', '2025-06-30 07:38:37', 1, 5.00),
-(2, 'Zainab Hotel No. 1', 'A luxurious hotel in Jhang owned by Zainab.', '2010 St, Jhang', 'Jhang', '0300000201', 'zainabhotelno.1@jhanghotels.com', 'www.zainabhotelno.1.com', 'includes/images/zainab_hotel_no._1.jpg', '0000-00-00 00:00:00', '2025-06-30 07:57:26', 2, 2.33),
-(15, 'Ali hotel 2', 'ertyui', '1234567iuytsa\\zxcvbn00', 'jhang', '75098973809', 'tedowih547@godsigma.com', '', 'Uploads/hotels/hotel_68650e0f7773c.jpg', '2025-07-02 10:46:39', '2025-07-02 12:04:41', 1, 5.00);
+(2, 'Zainab Hotel No. 1', 'A luxurious hotel in Jhang owned by Zainab.', '2010 St, Jhang', 'Jhang', '0300000201', 'zainabhotelno.1@jhanghotels.com', 'www.zainabhotelno.1.com', 'includes/images/zainab_hotel_no._1.jpg', '0000-00-00 00:00:00', '2025-06-30 07:57:26', 2, 2.33);
 
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `hotel_employee`
+--
 
 CREATE TABLE `hotel_employee` (
   `id` int(11) NOT NULL,
@@ -109,9 +148,18 @@ CREATE TABLE `hotel_employee` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `hotel_employee`
+--
 
 INSERT INTO `hotel_employee` (`id`, `user_id`, `hotel_id`, `employee_id`, `designation`, `department`, `salary`, `joining_date`, `shift_timing`, `status`, `created_at`, `updated_at`) VALUES
-(2, 19, 15, '876857587678', 'manager', 'operation', 50000.00, '2025-07-02', '9:00 AM to 5:00 PM', 'inactive', '2025-07-02 12:14:25', '2025-07-02 12:14:39');
+(1, 18, 1, 'EMP328774985043', 'manager', 'operation', 989842.00, '2025-06-30', '9:00 AM to 5:00 PM', 'active', '2025-06-30 03:52:51', '2025-06-30 03:52:51');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `hotel_menu`
+--
 
 CREATE TABLE `hotel_menu` (
   `id` int(11) NOT NULL,
@@ -122,6 +170,9 @@ CREATE TABLE `hotel_menu` (
   `image_url` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `hotel_menu`
+--
 
 INSERT INTO `hotel_menu` (`id`, `hotel_id`, `item_name`, `price`, `is_available`, `image_url`) VALUES
 (1, 2, 'biryani', 200.00, 1, 'Uploads/food/food_68496149bcfce.jpg'),
@@ -130,6 +181,11 @@ INSERT INTO `hotel_menu` (`id`, `hotel_id`, `item_name`, `price`, `is_available`
 (4, 1, 'alo gosht', 200.00, 1, 'Uploads/food/food_68496a95e22b4.jpg'),
 (5, 1, 'alo matar', 400.00, 1, 'Uploads/food/food_68496a95e31a1.jpg');
 
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `messages`
+--
 
 CREATE TABLE `messages` (
   `id` int(11) NOT NULL,
@@ -141,6 +197,9 @@ CREATE TABLE `messages` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `messages`
+--
 
 INSERT INTO `messages` (`id`, `conversation_id`, `sender_id`, `sender_type`, `message`, `is_read`, `created_at`) VALUES
 (1, 1, 4, 'user', 'hi', 1, '2025-06-30 08:21:56'),
@@ -150,18 +209,13 @@ INSERT INTO `messages` (`id`, `conversation_id`, `sender_id`, `sender_type`, `me
 (5, 1, 4, 'user', 'hoho', 1, '2025-06-30 08:26:27'),
 (6, 1, 4, 'user', 'hi', 1, '2025-06-30 08:37:14'),
 (7, 1, 2, 'admin', 'yes ?', 1, '2025-06-30 08:54:57'),
-(8, 1, 2, 'admin', 'nothing', 0, '2025-06-30 09:16:39'),
-(9, 6, 1, 'user', 'hello', 1, '2025-07-02 10:50:21'),
-(10, 7, 3, 'user', 'hi ...', 0, '2025-07-02 10:51:58'),
-(11, 7, 3, 'user', 'listen', 0, '2025-07-02 10:52:02'),
-(12, 5, 1, 'admin', 'hello', 1, '2025-07-02 10:55:57'),
-(13, 5, 1, 'admin', 'hi', 1, '2025-07-02 10:56:02'),
-(14, 5, 3, 'user', 'hi', 1, '2025-07-02 10:56:47'),
-(15, 8, 5, 'user', 'hi', 1, '2025-07-02 11:43:26'),
-(16, 8, 5, 'user', 'this message is form hotel 1', 1, '2025-07-02 11:44:45'),
-(17, 8, 5, 'user', 'this is from hotel 2', 1, '2025-07-02 11:45:16');
+(8, 1, 2, 'admin', 'nothing', 0, '2025-06-30 09:16:39');
 
+-- --------------------------------------------------------
 
+--
+-- Table structure for table `reviews`
+--
 
 CREATE TABLE `reviews` (
   `id` int(11) NOT NULL,
@@ -172,55 +226,15 @@ CREATE TABLE `reviews` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `reviews`
+--
 
 INSERT INTO `reviews` (`id`, `hotel_id`, `user_id`, `rating`, `comment`, `created_at`) VALUES
 (1, 1, 3, 5, 'nice', '2025-06-30 07:38:37'),
 (2, 2, 3, 1, 'avg', '2025-06-30 07:41:14'),
 (3, 2, 4, 1, '1 star', '2025-06-30 07:57:09'),
-(4, 2, 4, 5, '5 stars', '2025-06-30 07:57:26'),
-(5, 15, 5, 5, 'nice', '2025-07-02 12:04:41');
-
---
--- Triggers `reviews`
---
-DELIMITER $$
-CREATE TRIGGER `after_review_delete` AFTER DELETE ON `reviews` FOR EACH ROW BEGIN
-    DECLARE avg_rating DECIMAL(3,2);
-    
-    SELECT IFNULL(AVG(`rating`), NULL) INTO avg_rating
-    FROM `reviews` 
-    WHERE `hotel_id` = OLD.hotel_id;
-    
-    UPDATE `hotels` 
-    SET `average_rating` = avg_rating
-    WHERE `id` = OLD.hotel_id;
-END
-$$
-DELIMITER ;
-DELIMITER $$
-CREATE TRIGGER `after_review_insert` AFTER INSERT ON `reviews` FOR EACH ROW BEGIN
-    UPDATE `hotels` 
-    SET `average_rating` = (
-        SELECT AVG(`rating`) 
-        FROM `reviews` 
-        WHERE `hotel_id` = NEW.hotel_id
-    )
-    WHERE `id` = NEW.hotel_id;
-END
-$$
-DELIMITER ;
-DELIMITER $$
-CREATE TRIGGER `after_review_update` AFTER UPDATE ON `reviews` FOR EACH ROW BEGIN
-    UPDATE `hotels` 
-    SET `average_rating` = (
-        SELECT AVG(`rating`) 
-        FROM `reviews` 
-        WHERE `hotel_id` = NEW.hotel_id
-    )
-    WHERE `id` = NEW.hotel_id;
-END
-$$
-DELIMITER ;
+(4, 2, 4, 5, '5 stars', '2025-06-30 07:57:26');
 
 -- --------------------------------------------------------
 
@@ -285,221 +299,6 @@ INSERT INTO `users` (`id`, `username`, `email`, `password`, `role`, `status`, `c
 (4, 'user2', 'user2@jhanghotels.com', '$2y$10$PtLab4G5FXAEHVersk91JOi4wtC38tvsBbhyHl9WCtuc3eNLGOd76', 'user', 'active', '2025-05-27 04:38:53', 'Sara', 'Malik', '03211234567', '456 Garden Rd, Jhang', NULL, 0),
 (5, 'user3', 'user3@jhanghotels.com', '$2y$10$ZAu/yLhUqqDRusv5dobMU.gWDOuye4UFW741o86qv/PdBiMJa.XSi', 'user', 'active', '2025-05-27 04:38:53', 'Usman', 'Riaz', '03311234567', '789 Park Ave, Jhang', NULL, 0),
 (17, 'ali899677', 'ali998@gmail.com', '$2y$10$3zYqvWwcVMyOXBGC.3o9Vun2rPXq8Lo9gqY0Jm/nQTsZ0Vq1SYSDK', 'user', 'active', '2025-06-29 18:26:31', 'ali', 'hassan', '0000000000', 'cvbnm', NULL, 1),
-(18, 'employee82309504', 'tedowih547@godsigma.com', '$2y$10$hA7pf8//aq7uJ8fpCVgLlO6NDbBM4N.XBsUJgS5jDo9wvggSDulKS', 'user', 'active', '2025-06-30 03:52:51', '56yui', 'iuytghj', '0000000000', '1234567iuytsa\\zxcvbn00', NULL, 1),
-(19, 'employee126778', 'employeealihotel2@gmail.com', '$2y$10$oALlu0/JiQRZehHAgbeiBeK8NWCt/0dM0Jqv7dtWY45MooHX/RT7m', 'user', 'active', '2025-07-02 12:14:25', 'ali', 'hassan', '0345917866', '1234567iuytsa\\zxcvbn00', NULL, 1);
+(18, 'employee82309504', 'tedowih547@godsigma.com', '$2y$10$hA7pf8//aq7uJ8fpCVgLlO6NDbBM4N.XBsUJgS5jDo9wvggSDulKS', 'user', 'active', '2025-06-30 03:52:51', '56yui', 'iuytghj', '0000000000', '1234567iuytsa\\zxcvbn00', NULL, 1);
 
---
--- Indexes for dumped tables
---
-
---
--- Indexes for table `bookings`
---
-ALTER TABLE `bookings`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `user_id` (`user_id`),
-  ADD KEY `hotel_id` (`hotel_id`),
-  ADD KEY `room_id` (`room_id`);
-
---
--- Indexes for table `conversations`
---
-ALTER TABLE `conversations`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `unique_conversation` (`user_id`,`admin_id`),
-  ADD KEY `hotel_id` (`admin_id`);
-
---
--- Indexes for table `food_orders`
---
-ALTER TABLE `food_orders`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `user_id` (`user_id`),
-  ADD KEY `hotel_id` (`hotel_id`),
-  ADD KEY `menu_item_id` (`menu_item_id`);
-
---
--- Indexes for table `hotels`
---
-ALTER TABLE `hotels`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `fk_vendor_id` (`vendor_id`);
-
---
--- Indexes for table `hotel_employee`
---
-ALTER TABLE `hotel_employee`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `user_id` (`user_id`),
-  ADD KEY `hotel_id` (`hotel_id`);
-
---
--- Indexes for table `hotel_menu`
---
-ALTER TABLE `hotel_menu`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `hotel_id` (`hotel_id`);
-
---
--- Indexes for table `messages`
---
-ALTER TABLE `messages`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `conversation_id` (`conversation_id`);
-
---
--- Indexes for table `reviews`
---
-ALTER TABLE `reviews`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `hotel_id` (`hotel_id`),
-  ADD KEY `user_id` (`user_id`);
-
---
--- Indexes for table `rooms`
---
-ALTER TABLE `rooms`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `hotel_id` (`hotel_id`);
-
---
--- Indexes for table `users`
---
-ALTER TABLE `users`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `username` (`username`),
-  ADD UNIQUE KEY `email` (`email`);
-
---
--- AUTO_INCREMENT for dumped tables
---
-
---
--- AUTO_INCREMENT for table `bookings`
---
-ALTER TABLE `bookings`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=41;
-
---
--- AUTO_INCREMENT for table `conversations`
---
-ALTER TABLE `conversations`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
-
---
--- AUTO_INCREMENT for table `food_orders`
---
-ALTER TABLE `food_orders`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
-
---
--- AUTO_INCREMENT for table `hotels`
---
-ALTER TABLE `hotels`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
-
---
--- AUTO_INCREMENT for table `hotel_employee`
---
-ALTER TABLE `hotel_employee`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
-
---
--- AUTO_INCREMENT for table `hotel_menu`
---
-ALTER TABLE `hotel_menu`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
-
---
--- AUTO_INCREMENT for table `messages`
---
-ALTER TABLE `messages`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
-
---
--- AUTO_INCREMENT for table `reviews`
---
-ALTER TABLE `reviews`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
-
---
--- AUTO_INCREMENT for table `rooms`
---
-ALTER TABLE `rooms`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=65;
-
---
--- AUTO_INCREMENT for table `users`
---
-ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
-
---
--- Constraints for dumped tables
---
-
---
--- Constraints for table `bookings`
---
-ALTER TABLE `bookings`
-  ADD CONSTRAINT `bookings_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
-  ADD CONSTRAINT `bookings_ibfk_2` FOREIGN KEY (`hotel_id`) REFERENCES `hotels` (`id`),
-  ADD CONSTRAINT `bookings_ibfk_3` FOREIGN KEY (`room_id`) REFERENCES `rooms` (`id`);
-
---
--- Constraints for table `conversations`
---
-ALTER TABLE `conversations`
-  ADD CONSTRAINT `conversations_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `conversations_ibfk_2` FOREIGN KEY (`admin_id`) REFERENCES `hotels` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `food_orders`
---
-ALTER TABLE `food_orders`
-  ADD CONSTRAINT `food_orders_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
-  ADD CONSTRAINT `food_orders_ibfk_2` FOREIGN KEY (`hotel_id`) REFERENCES `hotels` (`id`),
-  ADD CONSTRAINT `food_orders_ibfk_3` FOREIGN KEY (`menu_item_id`) REFERENCES `hotel_menu` (`id`);
-
---
--- Constraints for table `hotels`
---
-ALTER TABLE `hotels`
-  ADD CONSTRAINT `fk_vendor_id` FOREIGN KEY (`vendor_id`) REFERENCES `users` (`id`);
-
---
--- Constraints for table `hotel_employee`
---
-ALTER TABLE `hotel_employee`
-  ADD CONSTRAINT `hotel_employee_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `hotel_employee_ibfk_2` FOREIGN KEY (`hotel_id`) REFERENCES `hotels` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `hotel_menu`
---
-ALTER TABLE `hotel_menu`
-  ADD CONSTRAINT `hotel_menu_ibfk_1` FOREIGN KEY (`hotel_id`) REFERENCES `hotels` (`id`);
-
---
--- Constraints for table `messages`
---
-ALTER TABLE `messages`
-  ADD CONSTRAINT `messages_ibfk_1` FOREIGN KEY (`conversation_id`) REFERENCES `conversations` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `reviews`
---
-ALTER TABLE `reviews`
-  ADD CONSTRAINT `reviews_ibfk_1` FOREIGN KEY (`hotel_id`) REFERENCES `hotels` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `reviews_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `rooms`
---
-ALTER TABLE `rooms`
-  ADD CONSTRAINT `rooms_ibfk_1` FOREIGN KEY (`hotel_id`) REFERENCES `hotels` (`id`) ON DELETE CASCADE;
 COMMIT;
-
-/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
-/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
-/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;

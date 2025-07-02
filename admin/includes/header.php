@@ -78,20 +78,19 @@ if (!isset($conn) || $conn->connect_error) {
                         <a class="nav-link position-relative" href="chat.php">
                             <i class="fas fa-comments"></i> Chats
                             <?php
-                            // Get unread message count for the admin's hotel
+                            // Get unread message count for the admin
                             $unread_count = 0;
-                            $vendor_id = $_SESSION['user_id'];
+                            $admin_id = $_SESSION['user_id'];
                             $stmt = $conn->prepare("
                                 SELECT COUNT(m.id) as unread_count
                                 FROM messages m
                                 JOIN conversations c ON m.conversation_id = c.id
-                                JOIN hotels h ON c.hotel_id = h.id
-                                WHERE h.vendor_id = ? AND m.sender_type = 'user' AND m.is_read = FALSE
+                                WHERE c.admin_id = ? AND m.sender_type = 'user' AND m.is_read = FALSE
                             ");
                             if ($stmt === false) {
                                 error_log("Prepare failed for unread count: " . $conn->error, 3, $project_root . '/error.log');
                             } else {
-                                $stmt->bind_param("i", $vendor_id);
+                                $stmt->bind_param("i", $admin_id);
                                 $stmt->execute();
                                 $result = $stmt->get_result();
                                 if ($row = $result->fetch_assoc()) {

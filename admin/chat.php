@@ -3,88 +3,47 @@ require_once '../config/database.php';
 require_once '../includes/session.php';
 require_once 'includes/auth.php';
 
-// Ensure admin is logged in
 if (!isLoggedIn() || $_SESSION['role'] !== 'admin') {
     header('Location: ../login.php');
     exit();
 }
 
-// Get hotel ID for the admin
 $admin_id = $_SESSION['user_id'];
-$hotel_id = 0;
 
-// Get hotel managed by this admin
-$stmt = $conn->prepare("SELECT id FROM hotels WHERE vendor_id = ? LIMIT 1");
-if ($stmt === false) {
-    error_log("Prepare failed: " . $conn->error, 3, '../error.log');
-    die("Database error. Please try again later.");
-}
-$stmt->bind_param("i", $admin_id);
-if (!$stmt->execute()) {
-    error_log("Execute failed: " . $stmt->error, 3, '../error.log');
-    die("Database error. Please try again later.");
-}
-$result = $stmt->get_result();
-
-if ($hotel = $result->fetch_assoc()) {
-    $hotel_id = $hotel['id'];
-} else {
-    $error_message = "No hotel assigned to this admin account.";
-    error_log("No hotel found for admin_id: $admin_id", 3, '../error.log');
-}
-$stmt->close();
-
-// Get conversations for this hotel
+// Get conversations for this admin
 $conversations = [];
-if ($hotel_id > 0) {
-    $stmt = $conn->prepare("
-        SELECT c.*, u.username, u.profile_image,
-               (SELECT COUNT(*) FROM messages m WHERE m.conversation_id = c.id AND m.sender_type = 'user' AND m.is_read = FALSE) as unread_count
-        FROM conversations c
-        JOIN users u ON c.user_id = u.id
-        WHERE c.hotel_id = ?
-        ORDER BY c.updated_at DESC
-    ");
-    if ($stmt === false) {
-        error_log("Prepare failed for conversations: " . $conn->error, 3, '../error.log');
-        die("Database error. Please try again later.");
-    }
-    $stmt->bind_param("i", $hotel_id);
-    $stmt->execute();
-    $conversations = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
-    $stmt->close();
-}
+$stmt = $conn->prepare("
+    SELECT c.*, u.username, u.profile_image,
+           (SELECT COUNT(*) FROM messages m WHERE m.conversation_id = c.id AND m.sender_type = 'user' AND m.is_read = FALSE) as unread_count
+    FROM conversations c
+    JOIN users u ON c.user_id = u.id
+    WHERE c.admin_id = ?
+    ORDER BY c.updated_at DESC
+");
+$stmt->bind_param("i", $admin_id);
+$stmt->execute();
+$conversations = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+$stmt->close();
 
 // Get messages for the selected conversation
 $selected_conversation_id = isset($_GET['conversation_id']) ? intval($_GET['conversation_id']) : 0;
 $messages = [];
 $recipient = null;
 
-if ($selected_conversation_id > 0 && $hotel_id > 0) {
-    // Verify this conversation belongs to the admin's hotel
-    $stmt = $conn->prepare("SELECT * FROM conversations WHERE id = ? AND hotel_id = ?");
-    if ($stmt === false) {
-        error_log("Prepare failed for conversation check: " . $conn->error, 3, '../error.log');
-        die("Database error. Please try again later.");
-    }
-    $stmt->bind_param("ii", $selected_conversation_id, $hotel_id);
+if ($selected_conversation_id > 0) {
+    $stmt = $conn->prepare("SELECT * FROM conversations WHERE id = ? AND admin_id = ?");
+    $stmt->bind_param("ii", $selected_conversation_id, $admin_id);
     $stmt->execute();
     $conversation = $stmt->get_result()->fetch_assoc();
     $stmt->close();
     
     if ($conversation) {
-        // Get user info
         $stmt = $conn->prepare("SELECT * FROM users WHERE id = ?");
-        if ($stmt === false) {
-            error_log("Prepare failed for user info: " . $conn->error, 3, '../error.log');
-            die("Database error. Please try again later.");
-        }
         $stmt->bind_param("i", $conversation['user_id']);
         $stmt->execute();
         $recipient = $stmt->get_result()->fetch_assoc();
         $stmt->close();
         
-        // Get messages
         $stmt = $conn->prepare("
             SELECT m.*, u.username, u.profile_image 
             FROM messages m
@@ -92,16 +51,11 @@ if ($selected_conversation_id > 0 && $hotel_id > 0) {
             WHERE m.conversation_id = ? 
             ORDER BY m.created_at ASC
         ");
-        if ($stmt === false) {
-            error_log("Prepare failed for messages: " . $conn->error, 3, '../error.log');
-            die("Database error. Please try again later.");
-        }
         $stmt->bind_param("i", $selected_conversation_id);
         $stmt->execute();
         $messages = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
         $stmt->close();
         
-        // Mark messages as read
         $update = $conn->prepare("
             UPDATE messages 
             SET is_read = TRUE 
@@ -109,13 +63,9 @@ if ($selected_conversation_id > 0 && $hotel_id > 0) {
             AND sender_type = 'user' 
             AND is_read = FALSE
         ");
-        if ($update) {
-            $update->bind_param("i", $selected_conversation_id);
-            $update->execute();
-            $update->close();
-        } else {
-            error_log("Prepare failed for marking messages read: " . $conn->error, 3, '../error.log');
-        }
+        $update->bind_param("i", $selected_conversation_id);
+        $update->execute();
+        $update->close();
     }
 }
 ?>
@@ -124,7 +74,7 @@ if ($selected_conversation_id > 0 && $hotel_id > 0) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hotel Chat - Admin Panel</title>
+    <title>Customer Chats - Admin Panel</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
@@ -141,10 +91,6 @@ if ($selected_conversation_id > 0 && $hotel_id > 0) {
             overflow: hidden;
             display: flex;
             height: calc(100vh - 200px);
-            transition: transform 0.3s;
-        }
-        .chat-container:hover {
-            transform: translateY(-5px);
         }
         .conversation-list {
             width: 300px;
@@ -233,17 +179,14 @@ if ($selected_conversation_id > 0 && $hotel_id > 0) {
             padding: 10px 20px;
             border-radius: 20px;
             font-family: 'Poppins', sans-serif;
-            transition: all 0.3s;
         }
         .chat-input button:hover {
             background-color: #b38b12;
-            transform: translateY(-2px);
         }
         .conversation-item {
             padding: 15px;
             border-bottom: 1px solid #eee;
             cursor: pointer;
-            transition: all 0.3s;
             border-radius: 5px;
             margin: 5px;
         }
@@ -288,78 +231,66 @@ if ($selected_conversation_id > 0 && $hotel_id > 0) {
         <div class="row">
             <div class="col-12">
                 <h2>Customer Chats</h2>
-                <?php if (isset($error_message)): ?>
-                    <div class="alert alert-warning"><?php echo htmlspecialchars($error_message); ?></div>
-                <?php else: ?>
-                    <div class="chat-container">
-                        <!-- Conversation List -->
-                        <div class="conversation-list">
-                            <?php foreach ($conversations as $conv): ?>
-                                <a href="?conversation_id=<?php echo $conv['id']; ?>" 
-                                   class="text-decoration-none text-dark">
-                                    <div class="conversation-item <?php echo $selected_conversation_id == $conv['id'] ? 'active' : ''; ?>">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <div class="fw-bold"><?php echo htmlspecialchars($conv['username']); ?></div>
-                                            <?php if ($conv['unread_count'] > 0): ?>
-                                                <span class="unread-count"><?php echo $conv['unread_count']; ?></span>
-                                            <?php endif; ?>
-                                        </div>
-                                        <div class="text-muted small">
-                                            <?php echo date('M j, g:i a', strtotime($conv['updated_at'])); ?>
-                                        </div>
+                <div class="chat-container">
+                    <div class="conversation-list">
+                        <?php foreach ($conversations as $conv): ?>
+                            <a href="?conversation_id=<?php echo $conv['id']; ?>" 
+                               class="text-decoration-none text-dark">
+                                <div class="conversation-item <?php echo $selected_conversation_id == $conv['id'] ? 'active' : ''; ?>">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div class="fw-bold"><?php echo htmlspecialchars($conv['username']); ?></div>
+                                        <?php if ($conv['unread_count'] > 0): ?>
+                                            <span class="unread-count"><?php echo $conv['unread_count']; ?></span>
+                                        <?php endif; ?>
                                     </div>
-                                </a>
-                            <?php endforeach; ?>
-                            <?php if (empty($conversations)): ?>
-                                <div class="p-3 text-muted text-center">No conversations yet</div>
-                            <?php endif; ?>
-                        </div>
-                        
-                        <!-- Chat Area -->
-                        <div class="chat-messages">
-                            <?php if ($selected_conversation_id > 0 && $recipient): ?>
-                                <!-- Chat Header -->
-                                <div class="chat-header">
-                                    <img src="<?php echo !empty($recipient['profile_image']) ? '../' . htmlspecialchars($recipient['profile_image']) : 'https://via.placeholder.com/40'; ?>" 
-                                         alt="<?php echo htmlspecialchars($recipient['username']); ?>">
-                                    <div>
-                                        <div class="fw-bold"><?php echo htmlspecialchars($recipient['username']); ?></div>
-                                        <div class="small text-muted">Online</div>
+                                    <div class="text-muted small">
+                                        <?php echo date('M j, g:i a', strtotime($conv['updated_at'])); ?>
                                     </div>
                                 </div>
-                                
-                                <!-- Messages -->
-                                <div class="message-list" id="messageList">
-                                    <?php foreach ($messages as $message): ?>
-                                        <div class="message <?php echo $message['sender_type'] === 'admin' ? 'sent' : 'received'; ?>">
-                                            <div class="message-content">
-                                                <?php echo nl2br(htmlspecialchars($message['message'])); ?>
-                                                <div class="message-time">
-                                                    <?php echo date('M j, g:i a', strtotime($message['created_at'])); ?>
-                                                </div>
+                            </a>
+                        <?php endforeach; ?>
+                        <?php if (empty($conversations)): ?>
+                            <div class="p-3 text-muted text-center">No conversations yet</div>
+                        <?php endif; ?>
+                    </div>
+                    <div class="chat-messages">
+                        <?php if ($selected_conversation_id > 0 && $recipient): ?>
+                            <div class="chat-header">
+                                <img src="<?php echo !empty($recipient['profile_image']) ? '../' . htmlspecialchars($recipient['profile_image']) : 'https://via.placeholder.com/40'; ?>" 
+                                     alt="<?php echo htmlspecialchars($recipient['username']); ?>">
+                                <div>
+                                    <div class="fw-bold"><?php echo htmlspecialchars($recipient['username']); ?></div>
+                                    <div class="small text-muted">Online</div>
+                                </div>
+                            </div>
+                            <div class="message-list" id="messageList">
+                                <?php foreach ($messages as $message): ?>
+                                    <div class="message <?php echo $message['sender_type'] === 'admin' ? 'sent' : 'received'; ?>">
+                                        <div class="message-content">
+                                            <?php echo nl2br(htmlspecialchars($message['message'])); ?>
+                                            <div class="message-time">
+                                                <?php echo date('M j, g:i a', strtotime($message['created_at'])); ?>
                                             </div>
                                         </div>
-                                    <?php endforeach; ?>
-                                </div>
-                                
-                                <!-- Message Input -->
-                                <div class="chat-input">
-                                    <form id="messageForm" class="d-flex">
-                                        <input type="hidden" name="conversation_id" value="<?php echo $selected_conversation_id; ?>">
-                                        <input type="text" name="message" class="form-control me-2" placeholder="Type your message..." required>
-                                        <button type="submit" class="btn btn-custom">
-                                            <i class="fas fa-paper-plane"></i>
-                                        </button>
-                                    </form>
-                                </div>
-                            <?php else: ?>
-                                <div class="d-flex align-items-center justify-content-center h-100 text-muted">
-                                    Select a conversation to start chatting
-                                </div>
-                            <?php endif; ?>
-                        </div>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                            <div class="chat-input">
+                                <form id="messageForm" class="d-flex">
+                                    <input type="hidden" name="conversation_id" value="<?php echo $selected_conversation_id; ?>">
+                                    <input type="text" name="message" class="form-control me-2" placeholder="Type your message..." required>
+                                    <button type="submit" class="btn btn-custom">
+                                        <i class="fas fa-paper-plane"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        <?php else: ?>
+                            <div class="d-flex align-items-center justify-content-center h-100 text-muted">
+                                Select a conversation to start chatting
+                            </div>
+                        <?php endif; ?>
                     </div>
-                <?php endif; ?>
+                </div>
             </div>
         </div>
     </div>
@@ -368,7 +299,6 @@ if ($selected_conversation_id > 0 && $hotel_id > 0) {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         $(document).ready(function() {
-            // Auto-scroll to bottom of messages
             function scrollToBottom() {
                 const messageList = document.getElementById('messageList');
                 if (messageList) {
@@ -376,10 +306,8 @@ if ($selected_conversation_id > 0 && $hotel_id > 0) {
                 }
             }
             
-            // Send message
             $('#messageForm').on('submit', function(e) {
                 e.preventDefault();
-                
                 const form = $(this);
                 const messageInput = form.find('input[name="message"]');
                 const message = messageInput.val().trim();
@@ -392,41 +320,34 @@ if ($selected_conversation_id > 0 && $hotel_id > 0) {
                     sender_type: 'admin'
                 }, function(response) {
                     if (response.success) {
-                        // Reload the page to show the new message
                         location.reload();
                     } else {
                         alert('Failed to send message: ' + (response.message || 'Unknown error'));
                     }
                 }, 'json').fail(function(xhr, status, error) {
-                    console.error('Send message error:', status, error, xhr.responseText);
-                    alert('Failed to send message. Please check the console for details.');
+                    console.error('Send message error:', status, error);
+                    alert('Failed to send message.');
                 });
                 
-                // Clear input
                 messageInput.val('');
             });
             
-            // Poll for new messages every 5 seconds if in a conversation
             <?php if ($selected_conversation_id > 0): ?>
                 setInterval(function() {
                     $.get('../ajax/get_messages.php', {
                         conversation_id: <?php echo $selected_conversation_id; ?>
                     }, function(response) {
-                        if (response.success) {
-                            // Only reload if we have new messages
-                            if (response.messages.length > <?php echo count($messages); ?>) {
-                                location.reload();
-                            }
+                        if (response.success && response.messages.length > <?php echo count($messages); ?>) {
+                            location.reload();
                         }
                     }, 'json').fail(function(xhr, status, error) {
-                        console.error('Poll messages error:', status, error, xhr.responseText);
+                        console.error('Poll messages error:', status, error);
                     });
                 }, 5000);
             <?php endif; ?>
             
-            // Initial scroll to bottom
             scrollToBottom();
         });
     </script>
 </body>
-</html>  
+</html>

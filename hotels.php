@@ -48,13 +48,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_review'])) {
     exit();
 }
 
-// Fetch all hotels with their ratings
+// Fetch all hotels with their ratings and admin_id
 $all_hotels = [];
-$sql = "SELECT h.*, 
+$sql = "SELECT h.*, u.id as admin_id, 
                COALESCE((SELECT AVG(rating) FROM reviews WHERE hotel_id = h.id), 0) as average_rating,
                (SELECT COUNT(*) FROM reviews WHERE hotel_id = h.id) as review_count
         FROM hotels h 
-        ORDER BY name ASC";
+        LEFT JOIN users u ON h.vendor_id = u.id 
+        WHERE u.role = 'admin' OR u.id IS NULL 
+        ORDER BY h.name ASC";
 $result = mysqli_query($conn, $sql);
 if ($result) {
     while ($row = mysqli_fetch_assoc($result)) {
@@ -472,7 +474,10 @@ if ($result) {
                                         <a href="room-list.php?hotel=<?php echo $hotel['id']; ?>" class="btn btn-custom flex-grow-1">
                                             <i class="fas fa-hotel me-1"></i> View Rooms
                                         </a>
-                                        <a href="chat.php?hotel_id=<?php echo $hotel['id']; ?>" class="chat-link" title="Chat with hotel">
+                                        <?php
+                                        $admin_id = $hotel['admin_id'] ?? 0;
+                                        ?>
+                                        <a href="chat.php?admin_id=<?php echo $admin_id; ?>" class="chat-link" title="Chat with hotel">
                                             <i class="fas fa-comment-dots"></i>
                                         </a>
                                     </div>
