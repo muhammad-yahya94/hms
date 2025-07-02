@@ -585,13 +585,14 @@ if ($result) {
                     <h5>Jhang Hotels</h5>
                     <p>Experience luxury and comfort in the heart of Jhang.</p>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-4 mb-4">
                     <h5>Quick Links</h5>
                     <ul class="list-unstyled">
-                        <li><a href="room-list.php" class="text-white text-decoration-none">Rooms</a></li>
-                        <li><a href="about.php" class="text-white text-decoration-none">About Us</a></li>
-                        <li><a href="gallery.php" class="text-white text-decoration-none">Gallery</a></li>
-                        <li><a href="index.php#contact" class="text-white text-decoration-none">Contact Us</a></li>
+                        <li><a href="index.php" class="text-white">Home</a></li>
+                        <li><a href="hotels.php" class="text-white">Hotels</a></li>
+                        <li><a href="about.php" class="text-white">About Us</a></li>
+                        <li><a href="gallery.php" class="text-white">Gallery</a></li>
+                        <li><a href="contact.php" class="text-white">Contact</a></li>
                     </ul>
                 </div>
                 <div class="col-md-4">
