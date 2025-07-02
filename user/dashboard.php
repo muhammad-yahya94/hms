@@ -148,6 +148,10 @@ $recent_bookings = mysqli_stmt_get_result($stmt);
             background-color: #d4edda;
             color: #155724;
         }
+        .status-completed {
+            background-color: #d4edda;
+            color:#17a2b8;
+        }
         .status-cancelled {
             background-color: #f8d7da;
             color: #721c24;
@@ -235,7 +239,7 @@ $recent_bookings = mysqli_stmt_get_result($stmt);
                                         <i class="fas fa-hotel text-muted me-1"></i><?php echo htmlspecialchars($booking['hotel_name']); ?>
                                     </h5>
                                     <p class="text-muted mb-1">
-                                        <i class="fas fa-door-open me-1"></i><?php echo ucfirst(str_replace('_', ' ', htmlspecialchars($booking['room_type']))); ?>
+                                        <i class="fas fa-door-open me-1"></i><?php echo ucfirst(str_replace('_', ' ', htmlspecialchars($booking['room_type']))) . ' (Room NO.: ' . htmlspecialchars($booking['room_id']) . ')'; ?>
                                     </p>
                                     <p class="mb-1">
                                         <i class="fas fa-calendar"></i> 

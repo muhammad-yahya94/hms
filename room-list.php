@@ -24,9 +24,9 @@ $sql = "SELECT r.*, h.name as hotel_name, h.city, h.address, h.image_url as hote
                     (b.check_in_date <= ? AND b.check_out_date >= ?) OR
                     (b.check_in_date >= ? AND b.check_out_date <= ?)
                 )
-            ) THEN 'booked'
+            ) THEN 'unavailable'
             ELSE r.status
-        END as display_status,
+        END as display_status,   
         (SELECT b.check_in_date 
          FROM bookings b 
          WHERE b.room_id = r.id 
@@ -610,7 +610,7 @@ $rooms_found = mysqli_num_rows($result) > 0;
                                         <button class="btn btn-custom" disabled><?php echo ucfirst($room['display_status']); ?></button>
                                     <?php endif; ?>
                                     <div class="price-badge">PKR <?php echo number_format($room['price_per_hour'], 2); ?>/Hour</div>
-                                    <div class="status-badge <?php echo $room['display_status'] == 'available' ? 'status-available' : ($room['display_status'] == 'booked' ? 'status-booked' : 'status-maintenance'); ?>">
+                                    <div class="status-badge <?php echo $room['display_status'] == 'available' ? 'status-available' : ($room['display_status'] == 'unavailable' ? 'status-booked' : 'status-maintenance'); ?>">
                                         <?php echo ucfirst(htmlspecialchars($room['display_status'])); ?>
                                     </div>
                                     <?php if ($room['display_status'] == 'booked' && !empty($room['booking_check_in']) && !empty($room['booking_check_out'])): ?>

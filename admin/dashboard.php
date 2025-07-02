@@ -117,7 +117,7 @@ if ($result) {
 
 // Recent Bookings for current admin's hotels
 $stmt = mysqli_prepare($conn, "
-    SELECT b.*, r.room_type, h.name as hotel_name, u.first_name, u.last_name, b.booking_status 
+    SELECT b.*, r.id as room_id, r.room_type, h.name as hotel_name, u.first_name, u.last_name, b.booking_status 
     FROM bookings b 
     JOIN rooms r ON b.room_id = r.id
     JOIN hotels h ON b.hotel_id = h.id 
@@ -129,58 +129,7 @@ $stmt = mysqli_prepare($conn, "
 mysqli_stmt_bind_param($stmt, "i", $user_id);
 mysqli_stmt_execute($stmt);
 $recent_bookings = mysqli_stmt_get_result($stmt) ?: [];
-
-// // Revenue Analytics (last 6 months) for current admin's hotels
-// $stmt = mysqli_prepare($conn, "
-//     SELECT 
-//         DATE_FORMAT(b.check_in_date, '%Y-%m') as month,
-//         SUM(b.total_price) as total_revenue
-//     FROM bookings b 
-//     JOIN rooms r ON b.room_id = r.id 
-//     JOIN hotels h ON b.hotel_id = h.id 
-//     WHERE h.vendor_id = ? AND b.check_in_date <= NOW() AND b.booking_status = 'confirmed'
-//     GROUP BY DATE_FORMAT(b.check_in_date, '%Y-%m')
-//     ORDER BY month DESC 
-//     LIMIT 6
-// ");
-// mysqli_stmt_bind_param($stmt, "i", $user_id);
-// mysqli_stmt_execute($stmt);
-// $revenue_query = mysqli_stmt_get_result($stmt) ?: [];
-
-// // Prepare revenue data for the chart
-// $chartData = [];
-// $months = [];
-// $currentDate = new DateTime('2025-05-26 18:15:00'); // Current date and time: 06:15 PM PKT, May 26, 2025
-// for ($i = 0; $i < 6; $i++) {
-//     $monthKey = $currentDate->format('Y-m');
-//     $months[$i] = $currentDate->format('M Y');
-//     $chartData[$i] = 0;
-//     $currentDate->modify('-1 month');
-// }
-
-// if (mysqli_num_rows($revenue_query) > 0) {
-//     while ($row = mysqli_fetch_assoc($revenue_query)) {
-//         $monthKey = $row['month'];
-//         $index = array_search($monthKey, array_column($revenueData, 'month'));
-//         if ($index !== false) {
-//             $chartData[$index] = (float)($row['total_revenue'] ?? 0);
-//         }
-//     }
-// }
-
-// $revenueData = [];
-// for ($i = 0; $i < 6; $i++) {
-//     $revenueData[] = [
-//         'month' => $months[$i],
-//         'revenue' => $chartData[$i]
-//     ];
-// }
-// $revenueData = array_reverse($revenueData); // Oldest to newest for chart
-
-// // Generate revenue chart data
-// $labels = array_column($revenueData, 'month');
-// $revenues = array_column($revenueData, 'revenue');
-// ?>
+?>
 
 <!DOCTYPE html>
 <html lang="en">
@@ -255,13 +204,6 @@ $recent_bookings = mysqli_stmt_get_result($stmt) ?: [];
             margin-top: 20px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
-        .revenue-chart {
-            background: white;
-            border-radius: 10px;
-            padding: 20px;
-            margin-top: 20px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
         .btn-custom {
             background-color: #d4a017;
             color: white;
@@ -283,6 +225,7 @@ $recent_bookings = mysqli_stmt_get_result($stmt) ?: [];
         .status-pending { background-color: #ffc107; color: black; }
         .status-confirmed { background-color: #28a745; color: white; }
         .status-cancelled { background-color: #dc3545; color: white; }
+        .status-completed { background-color: #17a2b8; color: white; }
     </style>
 </head>
 <body>
@@ -311,7 +254,6 @@ $recent_bookings = mysqli_stmt_get_result($stmt) ?: [];
                             JOIN conversations c ON m.conversation_id = c.id
                             JOIN hotels h ON c.hotel_id = h.id
                             WHERE h.vendor_id = ? AND m.sender_type = 'user' AND m.is_read = FALSE
-                        
                         ");
                         $stmt->bind_param("i", $vendor_id);
                         $stmt->execute();
@@ -414,7 +356,7 @@ $recent_bookings = mysqli_stmt_get_result($stmt) ?: [];
                                     <?php while ($booking = mysqli_fetch_assoc($recent_bookings)): ?>
                                         <tr>
                                             <td><?php echo htmlspecialchars($booking['hotel_name']); ?></td>
-                                            <td><?php echo htmlspecialchars(ucfirst($booking['room_type'])); ?></td>
+                                            <td><?php echo htmlspecialchars('Room no' . $booking['room_id'] . ' - ' . ucfirst($booking['room_type'])); ?></td>
                                             <td><?php echo htmlspecialchars($booking['first_name'] . ' ' . $booking['last_name']); ?></td>
                                             <td><?php echo htmlspecialchars($booking['adults']) . ' Adults, ' . htmlspecialchars($booking['children']) . ' Children'; ?></td>
                                             <td><?php echo date('M d, Y H:i', strtotime($booking['check_in_date'])); ?></td>
@@ -439,83 +381,6 @@ $recent_bookings = mysqli_stmt_get_result($stmt) ?: [];
                         </table>
                     </div>
                 </div>
-
-                <!-- Revenue Chart -->
-                <!-- <div class="revenue-chart">
-                    <h4 class="mb-4">Revenue Overview (Last 6 Months)</h4>
-                    {
-                        "type": "line",
-                        "data": {
-                            "labels": <?php echo json_encode($labels); ?>,
-                            "datasets": [{
-                                "label": "Monthly Revenue (PKR)",
-                                "data": <?php echo json_encode($revenues); ?>,
-                                "borderColor": "#d4a017",
-                                "backgroundColor": "rgba(212, 160, 23, 0.2)",
-                                "tension": 0.4,
-                                "fill": true,
-                                "pointBackgroundColor": "#d4a017",
-                                "pointBorderColor": "#fff",
-                                "pointHoverBackgroundColor": "#fff",
-                                "pointHoverBorderColor": "#d4a017"
-                            }]
-                        },
-                        "options": {
-                            "responsive": true,
-                            "plugins": {
-                                "legend": {
-                                    "position": "top",
-                                    "labels": {
-                                        "font": {
-                                            "family": "Poppins",
-                                            "size": 14
-                                        }
-                                    }
-                                },
-                                "tooltip": {
-                                    "callbacks": {
-                                        "label": function(context) {
-                                            let label = context.dataset.label || '';
-                                            if (label) {
-                                                label += ': ';
-                                            }
-                                            label += 'PKR ' + context.parsed.y.toLocaleString();
-                                            return label;
-                                        }
-                                    }
-                                }
-                            },
-                            "scales": {
-                                "y": {
-                                    "beginAtZero": true,
-                                    "ticks": {
-                                        "callback": function(value) {
-                                            return 'PKR ' + value.toLocaleString();
-                                        },
-                                        "font": {
-                                            "family": "Poppins",
-                                            "size": 12
-                                        }
-                                    },
-                                    "grid": {
-                                        "color": "rgba(0, 0, 0, 0.05)"
-                                    }
-                                },
-                                "x": {
-                                    "ticks": {
-                                        "font": {
-                                            "family": "Poppins",
-                                            "size": 12
-                                        }
-                                    },
-                                    "grid": {
-                                        "display": false
-                                    }
-                                }
-                            }
-                        }
-                    }
-                </div> -->
             </div>
         </div>
     </div>

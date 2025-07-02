@@ -30,6 +30,7 @@ $select_columns = [
     "u.phone",
     "u.address",
     "he.id as employee_id",
+    "he.hotel_id",
     "he.employee_id as employee_code",
     "he.designation",
     "he.department",
@@ -61,24 +62,15 @@ if (!in_array('status', $table_columns)) {
     $select_columns[array_search("he.status as employee_status", $select_columns)] = "'inactive' as employee_status";
 }
 
-// Fetch admin's vendor_id
-$admin_query = "SELECT vendor_id FROM users WHERE id = ?";
-$admin_stmt = mysqli_prepare($conn, $admin_query);
-mysqli_stmt_bind_param($admin_stmt, "i", $admin_id);
-mysqli_stmt_execute($admin_stmt);
-$admin_result = mysqli_stmt_get_result($admin_stmt);
-$admin = mysqli_fetch_assoc($admin_result);
-$admin_vendor_id = $admin['vendor_id'];
-
-// Fetch employees for hotels the admin can manage
+// Fetch employees for hotels the admin owns
 $employees_query = "SELECT " . implode(", ", $select_columns) . " 
     FROM users u 
     INNER JOIN hotel_employee he ON u.id = he.user_id
     INNER JOIN hotels h ON he.hotel_id = h.id
-    WHERE h.id IN (SELECT id FROM hotels WHERE vendor_id = ? OR ? = 1) 
+    WHERE h.vendor_id = ?
     ORDER BY he.created_at DESC";
 $employees_stmt = mysqli_prepare($conn, $employees_query);
-mysqli_stmt_bind_param($employees_stmt, "ii", $admin_vendor_id, $admin_id);
+mysqli_stmt_bind_param($employees_stmt, "i", $admin_id);
 mysqli_stmt_execute($employees_stmt);
 $employees = mysqli_stmt_get_result($employees_stmt);
 
@@ -111,6 +103,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_employee'])) {
     } elseif (!preg_match('/^[A-Za-z0-9]+$/', $employee_code)) {
         $error = "Employee ID must contain only letters and numbers.";
     } else {
+        // Check if hotel_id belongs to the admin
+        $check_hotel_sql = "SELECT id FROM hotels WHERE id = ? AND vendor_id = ?";
+        $check_hotel_stmt = mysqli_prepare($conn, $check_hotel_sql);
+        mysqli_stmt_bind_param($check_hotel_stmt, "ii", $hotel_id, $admin_id);
+        mysqli_stmt_execute($check_hotel_stmt);
+        mysqli_stmt_store_result($check_hotel_stmt);
+
         // Check for duplicate username, email, or employee_id
         $check_user_sql = "SELECT id FROM users WHERE username = ? OR email = ?";
         $check_user_stmt = mysqli_prepare($conn, $check_user_sql);
@@ -124,7 +123,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_employee'])) {
         mysqli_stmt_execute($check_employee_stmt);
         mysqli_stmt_store_result($check_employee_stmt);
 
-        if (mysqli_stmt_num_rows($check_user_stmt) > 0) {
+        if (mysqli_stmt_num_rows($check_hotel_stmt) == 0) {
+            $error = "Selected hotel is not managed by you.";
+        } elseif (mysqli_stmt_num_rows($check_user_stmt) > 0) {
             $error = "Username or email already exists.";
         } elseif (mysqli_stmt_num_rows($check_employee_stmt) > 0) {
             $error = "Employee ID already exists.";
@@ -137,7 +138,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_employee'])) {
                 $user_sql = "INSERT INTO users (username, email, password, role, first_name, last_name, phone, address, vendor_id) 
                              VALUES (?, ?, ?, 'user', ?, ?, ?, ?, ?)";
                 $user_stmt = mysqli_prepare($conn, $user_sql);
-                mysqli_stmt_bind_param($user_stmt, "sssssssi", $username, $email, $hashed_password, $first_name, $last_name, $phone, $address, $admin_vendor_id);
+                mysqli_stmt_bind_param($user_stmt, "sssssssi", $username, $email, $hashed_password, $first_name, $last_name, $phone, $address, $admin_id);
                 mysqli_stmt_execute($user_stmt);
                 $user_id = mysqli_insert_id($conn);
 
@@ -165,6 +166,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['add_employee'])) {
 // Handle employee update
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_employee'])) {
     $employee_id = (int)$_POST['employee_id'];
+    $hotel_id = (int)$_POST['hotel_id'];
     $first_name = trim($_POST['first_name']);
     $last_name = trim($_POST['last_name']);
     $phone = trim($_POST['phone']);
@@ -177,34 +179,45 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['update_employee'])) {
     $status = trim($_POST['status']);
 
     // Validate required fields
-    if (empty($first_name) || empty($last_name) || empty($designation) || empty($department) || $salary <= 0 || empty($joining_date) || empty($status)) {
+    if (empty($first_name) || empty($last_name) || empty($hotel_id) || empty($designation) || empty($department) || $salary <= 0 || empty($joining_date) || empty($status)) {
         $error = "All required fields must be filled.";
     } else {
-        // Begin transaction
-        mysqli_begin_transaction($conn);
-        try {
-            // Update users table
-            $user_sql = "UPDATE users SET first_name = ?, last_name = ?, phone = ?, address = ? 
-                         WHERE id = (SELECT user_id FROM hotel_employee WHERE id = ?)";
-            $user_stmt = mysqli_prepare($conn, $user_sql);
-            mysqli_stmt_bind_param($user_stmt, "ssssi", $first_name, $last_name, $phone, $address, $employee_id);
-            mysqli_stmt_execute($user_stmt);
+        // Check if hotel_id belongs to the admin
+        $check_hotel_sql = "SELECT id FROM hotels WHERE id = ? AND vendor_id = ?";
+        $check_hotel_stmt = mysqli_prepare($conn, $check_hotel_sql);
+        mysqli_stmt_bind_param($check_hotel_stmt, "ii", $hotel_id, $admin_id);
+        mysqli_stmt_execute($check_hotel_stmt);
+        mysqli_stmt_store_result($check_hotel_stmt);
 
-            // Update hotel_employee table
-            $employee_sql = "UPDATE hotel_employee SET designation = ?, department = ?, salary = ?, joining_date = ?, shift_timing = ?, status = ? 
-                             WHERE id = ? AND EXISTS (SELECT 1 FROM hotels h WHERE h.id = hotel_employee.hotel_id AND h.id IN (SELECT id FROM hotels WHERE vendor_id = ? OR ? = 1))";
-            $employee_stmt = mysqli_prepare($conn, $employee_sql);
-            mysqli_stmt_bind_param($employee_stmt, "ssdsssii", $designation, $department, $salary, $joining_date, $shift_timing, $status, $employee_id, $admin_vendor_id, $admin_id);
-            mysqli_stmt_execute($employee_stmt);
+        if (mysqli_stmt_num_rows($check_hotel_stmt) == 0) {
+            $error = "Selected hotel is not managed by you.";
+        } else {
+            // Begin transaction
+            mysqli_begin_transaction($conn);
+            try {
+                // Update users table
+                $user_sql = "UPDATE users SET first_name = ?, last_name = ?, phone = ?, address = ? 
+                             WHERE id = (SELECT user_id FROM hotel_employee WHERE id = ?)";
+                $user_stmt = mysqli_prepare($conn, $user_sql);
+                mysqli_stmt_bind_param($user_stmt, "ssssi", $first_name, $last_name, $phone, $address, $employee_id);
+                mysqli_stmt_execute($user_stmt);
 
-            mysqli_commit($conn);
-            $success = "Employee updated successfully.";
-            // Redirect to refresh the page
-            header("Location: users.php");
-            exit();
-        } catch (Exception $e) {
-            mysqli_rollback($conn);
-            $error = "Error updating employee: " . mysqli_error($conn);
+                // Update hotel_employee table
+                $employee_sql = "UPDATE hotel_employee SET hotel_id = ?, designation = ?, department = ?, salary = ?, joining_date = ?, shift_timing = ?, status = ? 
+                                 WHERE id = ? AND hotel_id IN (SELECT id FROM hotels WHERE vendor_id = ?)";
+                $employee_stmt = mysqli_prepare($conn, $employee_sql);
+                mysqli_stmt_bind_param($employee_stmt, "issdsssi", $hotel_id, $designation, $department, $salary, $joining_date, $shift_timing, $status, $employee_id, $admin_id);
+                mysqli_stmt_execute($employee_stmt);
+
+                mysqli_commit($conn);
+                $success = "Employee updated successfully.";
+                // Redirect to refresh the page
+                header("Location: users.php");
+                exit();
+            } catch (Exception $e) {
+                mysqli_rollback($conn);
+                $error = "Error updating employee: " . mysqli_error($conn);
+            }
         }
     }
 }
@@ -235,9 +248,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['delete_employee'])) {
         mysqli_begin_transaction($conn);
         try {
             // Delete from hotel_employee
-            $sql = "DELETE FROM hotel_employee WHERE id = ? AND EXISTS (SELECT 1 FROM hotels h WHERE h.id = hotel_employee.hotel_id AND h.id IN (SELECT id FROM hotels WHERE vendor_id = ? OR ? = 1))";
+            $sql = "DELETE FROM hotel_employee WHERE id = ? AND hotel_id IN (SELECT id FROM hotels WHERE vendor_id = ?)";
             $stmt = mysqli_prepare($conn, $sql);
-            mysqli_stmt_bind_param($stmt, "iii", $employee_id, $admin_vendor_id, $admin_id);
+            mysqli_stmt_bind_param($stmt, "ii", $employee_id, $admin_id);
             mysqli_stmt_execute($stmt);
 
             // Optionally delete user if no other employee records exist
@@ -384,17 +397,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['delete_employee'])) {
                         <?php 
                         // Get unread message count for the admin's hotel
                         $unread_count = 0;
-                        $vendor_id = $_SESSION['user_id'];
                         $stmt = $conn->prepare("
                             SELECT COUNT(m.id) as unread_count
                             FROM messages m
                             JOIN conversations c ON m.conversation_id = c.id
                             JOIN hotels h ON c.hotel_id = h.id
                             WHERE h.vendor_id = ? AND m.sender_type = 'user' AND m.is_read = FALSE
-                        
                         ");
                         if ($stmt) {
-                            $stmt->bind_param("i", $vendor_id);
+                            $stmt->bind_param("i", $admin_id);
                             $stmt->execute();
                             $result = $stmt->get_result();
                             if ($row = $result->fetch_assoc()) {
@@ -475,7 +486,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['delete_employee'])) {
                                                 data-salary="<?php echo $employee['salary']; ?>"
                                                 data-joining-date="<?php echo $employee['joining_date']; ?>"
                                                 data-shift-timing="<?php echo htmlspecialchars($employee['shift_timing']); ?>"
-                                                data-status="<?php echo htmlspecialchars($employee['employee_status']); ?>">
+                                                data-status="<?php echo htmlspecialchars($employee['employee_status']); ?>"
+                                                data-hotel-id="<?php echo $employee['hotel_id']; ?>">
                                             <i class="fas fa-edit"></i> Edit
                                         </button>
                                         <form method="POST" onsubmit="return confirm('Are you sure you want to delete this employee and their user account?');">
@@ -551,9 +563,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['delete_employee'])) {
                             <select class="form-select" id="hotel_id" name="hotel_id" required>
                                 <option value="">Select Hotel</option>
                                 <?php
-                                $hotels_query = "SELECT id, name FROM hotels WHERE vendor_id = ? OR ? = 1";
+                                $hotels_query = "SELECT id, name FROM hotels WHERE vendor_id = ?";
                                 $hotels_stmt = mysqli_prepare($conn, $hotels_query);
-                                mysqli_stmt_bind_param($hotels_stmt, "ii", $admin_vendor_id, $admin_id);
+                                mysqli_stmt_bind_param($hotels_stmt, "i", $admin_id);
                                 mysqli_stmt_execute($hotels_stmt);
                                 $hotels_result = mysqli_stmt_get_result($hotels_stmt);
                                 while ($hotel = mysqli_fetch_assoc($hotels_result)):
@@ -654,6 +666,25 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['delete_employee'])) {
                             </div>
                         </div>
                         <h6 class="mt-4 mb-3">Employee Information</h6>
+                        <div class="mb-3">
+                            <label for="edit_hotel_id" class="form-label">Hotel *</label>
+                            <select class="form-select" id="edit_hotel_id" name="hotel_id" required>
+                                <option value="">Select Hotel</option>
+                                <?php
+                                $hotels_query = "SELECT id, name FROM hotels WHERE vendor_id = ?";
+                                $hotels_stmt = mysqli_prepare($conn, $hotels_query);
+                                mysqli_stmt_bind_param($hotels_stmt, "i", $admin_id);
+                                mysqli_stmt_execute($hotels_stmt);
+                                $hotels_result = mysqli_stmt_get_result($hotels_stmt);
+                                while ($hotel = mysqli_fetch_assoc($hotels_result)):
+                                ?>
+                                    <option value="<?php echo $hotel['id']; ?>">
+                                        <?php echo htmlspecialchars($hotel['name']); ?>
+                                    </option>
+                                <?php endwhile; ?>
+                            </select>
+                            <div class="invalid-feedback">Please select a hotel.</div>
+                        </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label for="edit_designation" class="form-label">Designation *</label>
@@ -735,6 +766,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['delete_employee'])) {
                 const joiningDate = this.getAttribute('data-joining-date');
                 const shiftTiming = this.getAttribute('data-shift-timing');
                 const status = this.getAttribute('data-status');
+                const hotelId = this.getAttribute('data-hotel-id');
 
                 modal.querySelector('#edit_employee_id').value = employeeId;
                 modal.querySelector('#edit_first_name').value = firstName;
@@ -747,6 +779,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['delete_employee'])) {
                 modal.querySelector('#edit_joining_date').value = joiningDate;
                 modal.querySelector('#edit_shift_timing').value = shiftTiming || '';
                 modal.querySelector('#edit_status').value = status;
+                modal.querySelector('#edit_hotel_id').value = hotelId || '';
             });
         });
 
