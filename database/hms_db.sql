@@ -1,3 +1,32 @@
+-- phpMyAdmin SQL Dump
+-- version 5.2.1
+-- https://www.phpmyadmin.net/
+--
+-- Host: 127.0.0.1
+-- Generation Time: Jul 03, 2025 at 08:57 AM
+-- Server version: 10.4.32-MariaDB
+-- PHP Version: 8.2.12
+
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+START TRANSACTION;
+SET time_zone = "+00:00";
+
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8mb4 */;
+
+--
+-- Database: `hms_db`
+--
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `bookings`
+--
+
 CREATE TABLE `bookings` (
   `id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
@@ -15,6 +44,10 @@ CREATE TABLE `bookings` (
   `check_out` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `bookings`
+--
+
 INSERT INTO `bookings` (`id`, `user_id`, `hotel_id`, `room_id`, `check_in_date`, `check_out_date`, `adults`, `children`, `total_price`, `booking_status`, `created_at`, `status`, `check_in`, `check_out`) VALUES
 (1, 5, 1, 1, '2025-05-26 13:41:00', '2025-05-26 16:41:00', 3, 1, 600.00, 'completed', '2025-05-27 04:38:53', 'pending', NULL, NULL),
 (2, 5, 2, 4, '2025-05-25 11:29:00', '2025-05-25 16:29:00', 3, 1, 1000.00, 'completed', '2025-05-27 04:38:53', 'confirmed', '2025-05-25 11:29:00', '2025-05-25 16:29:00'),
@@ -25,8 +58,14 @@ INSERT INTO `bookings` (`id`, `user_id`, `hotel_id`, `room_id`, `check_in_date`,
 (37, 3, 2, 3, '2025-06-30 07:31:00', '2025-06-30 11:34:00', 2, 0, 1000.00, 'completed', '2025-06-30 05:31:12', 'pending', NULL, NULL),
 (38, 3, 1, 1, '2025-07-01 08:39:00', '2025-07-02 08:39:00', 2, 0, 115200.00, 'completed', '2025-07-01 03:39:53', 'pending', NULL, NULL),
 (39, 3, 1, 2, '2025-07-01 08:43:00', '2025-07-02 08:43:00', 2, 0, 172800.00, 'completed', '2025-07-01 03:43:18', 'pending', NULL, NULL),
-(40, 3, 2, 4, '2025-07-02 15:02:00', '2025-07-03 15:02:00', 2, 0, 172800.00, 'pending', '2025-07-02 10:02:18', 'pending', NULL, NULL);
+(40, 3, 2, 4, '2025-07-02 15:02:00', '2025-07-03 15:02:00', 2, 0, 172800.00, 'pending', '2025-07-02 10:02:18', 'pending', NULL, NULL),
+(41, 5, 1, 1, '2025-07-02 17:22:00', '2025-07-03 17:22:00', 2, 0, 115200.00, 'pending', '2025-07-02 12:24:42', 'pending', NULL, NULL);
 
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `conversations`
+--
 
 CREATE TABLE `conversations` (
   `id` int(11) NOT NULL,
@@ -36,6 +75,9 @@ CREATE TABLE `conversations` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `conversations`
+--
 
 INSERT INTO `conversations` (`id`, `user_id`, `admin_id`, `created_at`, `updated_at`) VALUES
 (1, 4, 2, '2025-06-30 08:06:24', '2025-06-30 09:16:39'),
@@ -48,6 +90,11 @@ INSERT INTO `conversations` (`id`, `user_id`, `admin_id`, `created_at`, `updated
 (8, 5, 1, '2025-07-02 11:42:53', '2025-07-02 11:45:16'),
 (9, 5, 2, '2025-07-02 11:43:14', '2025-07-02 11:43:14');
 
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `food_orders`
+--
 
 CREATE TABLE `food_orders` (
   `id` int(11) NOT NULL,
@@ -60,6 +107,9 @@ CREATE TABLE `food_orders` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `food_orders`
+--
 
 INSERT INTO `food_orders` (`id`, `user_id`, `hotel_id`, `menu_item_id`, `quantity`, `total_price`, `order_status`, `created_at`) VALUES
 (3, 3, 1, 4, 1, 200.00, 'delivered', '2025-06-11 11:40:48'),
@@ -70,6 +120,11 @@ INSERT INTO `food_orders` (`id`, `user_id`, `hotel_id`, `menu_item_id`, `quantit
 (8, 3, 2, 2, 2, 300.00, 'delivered', '2025-06-30 05:49:21'),
 (9, 3, 2, 1, 2, 400.00, 'delivered', '2025-06-30 06:03:32');
 
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `hotels`
+--
 
 CREATE TABLE `hotels` (
   `id` int(11) NOT NULL,
@@ -87,12 +142,20 @@ CREATE TABLE `hotels` (
   `average_rating` decimal(3,2) DEFAULT NULL COMMENT 'Stores the average rating (1.00-5.00) for the hotel'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `hotels`
+--
 
 INSERT INTO `hotels` (`id`, `name`, `description`, `address`, `city`, `phone`, `email`, `website`, `image_url`, `created_at`, `updated_at`, `vendor_id`, `average_rating`) VALUES
 (1, 'Ali Hotel No. 1', 'A luxurious hotel in Jhang owned by Ali.', '1010 St, Jhang', 'Jhang', '0300000101', 'alihotelno.1@jhanghotels.com', 'www.alihotelno.1.com', 'includes/images/ali_hotel_no._1.jpg', '0000-00-00 00:00:00', '2025-06-30 07:38:37', 1, 5.00),
 (2, 'Zainab Hotel No. 1', 'A luxurious hotel in Jhang owned by Zainab.', '2010 St, Jhang', 'Jhang', '0300000201', 'zainabhotelno.1@jhanghotels.com', 'www.zainabhotelno.1.com', 'includes/images/zainab_hotel_no._1.jpg', '0000-00-00 00:00:00', '2025-06-30 07:57:26', 2, 2.33),
 (15, 'Ali hotel 2', 'ertyui', '1234567iuytsa\\zxcvbn00', 'jhang', '75098973809', 'tedowih547@godsigma.com', '', 'Uploads/hotels/hotel_68650e0f7773c.jpg', '2025-07-02 10:46:39', '2025-07-02 12:04:41', 1, 5.00);
 
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `hotel_employee`
+--
 
 CREATE TABLE `hotel_employee` (
   `id` int(11) NOT NULL,
@@ -109,9 +172,18 @@ CREATE TABLE `hotel_employee` (
   `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `hotel_employee`
+--
 
 INSERT INTO `hotel_employee` (`id`, `user_id`, `hotel_id`, `employee_id`, `designation`, `department`, `salary`, `joining_date`, `shift_timing`, `status`, `created_at`, `updated_at`) VALUES
 (2, 19, 15, '876857587678', 'manager', 'operation', 50000.00, '2025-07-02', '9:00 AM to 5:00 PM', 'inactive', '2025-07-02 12:14:25', '2025-07-02 12:14:39');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `hotel_menu`
+--
 
 CREATE TABLE `hotel_menu` (
   `id` int(11) NOT NULL,
@@ -122,6 +194,9 @@ CREATE TABLE `hotel_menu` (
   `image_url` varchar(255) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `hotel_menu`
+--
 
 INSERT INTO `hotel_menu` (`id`, `hotel_id`, `item_name`, `price`, `is_available`, `image_url`) VALUES
 (1, 2, 'biryani', 200.00, 1, 'Uploads/food/food_68496149bcfce.jpg'),
@@ -130,6 +205,11 @@ INSERT INTO `hotel_menu` (`id`, `hotel_id`, `item_name`, `price`, `is_available`
 (4, 1, 'alo gosht', 200.00, 1, 'Uploads/food/food_68496a95e22b4.jpg'),
 (5, 1, 'alo matar', 400.00, 1, 'Uploads/food/food_68496a95e31a1.jpg');
 
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `messages`
+--
 
 CREATE TABLE `messages` (
   `id` int(11) NOT NULL,
@@ -141,6 +221,9 @@ CREATE TABLE `messages` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `messages`
+--
 
 INSERT INTO `messages` (`id`, `conversation_id`, `sender_id`, `sender_type`, `message`, `is_read`, `created_at`) VALUES
 (1, 1, 4, 'user', 'hi', 1, '2025-06-30 08:21:56'),
@@ -161,7 +244,11 @@ INSERT INTO `messages` (`id`, `conversation_id`, `sender_id`, `sender_type`, `me
 (16, 8, 5, 'user', 'this message is form hotel 1', 1, '2025-07-02 11:44:45'),
 (17, 8, 5, 'user', 'this is from hotel 2', 1, '2025-07-02 11:45:16');
 
+-- --------------------------------------------------------
 
+--
+-- Table structure for table `reviews`
+--
 
 CREATE TABLE `reviews` (
   `id` int(11) NOT NULL,
@@ -172,6 +259,9 @@ CREATE TABLE `reviews` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `reviews`
+--
 
 INSERT INTO `reviews` (`id`, `hotel_id`, `user_id`, `rating`, `comment`, `created_at`) VALUES
 (1, 1, 3, 5, 'nice', '2025-06-30 07:38:37'),
@@ -270,7 +360,7 @@ CREATE TABLE `users` (
   `last_name` varchar(50) NOT NULL,
   `phone` varchar(20) DEFAULT NULL,
   `address` text DEFAULT NULL,
-  `profile_image` varchar(255) DEFAULT NULL,
+  `profile_image` varchar(255) DEFAULT '',
   `vendor_id` int(11) NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
@@ -279,9 +369,9 @@ CREATE TABLE `users` (
 --
 
 INSERT INTO `users` (`id`, `username`, `email`, `password`, `role`, `status`, `created_at`, `first_name`, `last_name`, `phone`, `address`, `profile_image`, `vendor_id`) VALUES
-(1, 'admin1', 'admin1@jhanghotels.com', '$2y$10$vWs6QJ7nVuzUMt/YNzqXfO/81d41A2yIiEKohP.4zmhL6GYm77odS', 'admin', 'active', '2025-05-27 04:38:53', 'Ali', 'Hassan', '03001234567', 'Jhang, Punjab, Pakistan', NULL, 0),
+(1, 'admin1', 'admin1@jhanghotels.com', '$2y$10$vWs6QJ7nVuzUMt/YNzqXfO/81d41A2yIiEKohP.4zmhL6GYm77odS', 'admin', 'active', '2025-05-27 04:38:53', 'Ali', 'Hassan', '03001234567', 'Jhang, Punjab, Pakistan', 'uploads/profile_68660ce1ec7234.72562724.jpg', 0),
 (2, 'admin2', 'admin2@jhanghotels.com', '$2y$10$7rAI1.3IYUCXc2DZSI/rDeOLdxotDlN.PG7.jFyvKIldBsN0pteXK', 'admin', 'active', '2025-05-27 04:38:53', 'Zainab', 'Khan', '03001234568', 'Jhang, Punjab, Pakistan', NULL, 0),
-(3, 'user1', 'user1@jhanghotels.com', '$2y$10$ItbdF9RUjQa9xwDtPjJZw.zd9NcWEE9Z3l.yqcle7zRcp5HQHoz5y', 'user', 'active', '2025-05-27 04:38:53', 'Ahmed', 'Khan', '03111234567', '123 Main St, Jhang', NULL, 0),
+(3, 'user1', 'user1@jhanghotels.com', '$2y$10$ItbdF9RUjQa9xwDtPjJZw.zd9NcWEE9Z3l.yqcle7zRcp5HQHoz5y', 'user', 'active', '2025-05-27 04:38:53', 'Ahmed', 'Khan', '03111234567', '123 Main St, Jhang', '/Uploads/profile_6866298a897f43.70122210.jpg', 0),
 (4, 'user2', 'user2@jhanghotels.com', '$2y$10$PtLab4G5FXAEHVersk91JOi4wtC38tvsBbhyHl9WCtuc3eNLGOd76', 'user', 'active', '2025-05-27 04:38:53', 'Sara', 'Malik', '03211234567', '456 Garden Rd, Jhang', NULL, 0),
 (5, 'user3', 'user3@jhanghotels.com', '$2y$10$ZAu/yLhUqqDRusv5dobMU.gWDOuye4UFW741o86qv/PdBiMJa.XSi', 'user', 'active', '2025-05-27 04:38:53', 'Usman', 'Riaz', '03311234567', '789 Park Ave, Jhang', NULL, 0),
 (17, 'ali899677', 'ali998@gmail.com', '$2y$10$3zYqvWwcVMyOXBGC.3o9Vun2rPXq8Lo9gqY0Jm/nQTsZ0Vq1SYSDK', 'user', 'active', '2025-06-29 18:26:31', 'ali', 'hassan', '0000000000', 'cvbnm', NULL, 1),
@@ -378,7 +468,7 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `bookings`
 --
 ALTER TABLE `bookings`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=41;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=42;
 
 --
 -- AUTO_INCREMENT for table `conversations`
