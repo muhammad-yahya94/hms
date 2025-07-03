@@ -93,6 +93,28 @@ $where_conditions[] = "r.capacity >= ?";
 $params[] = $adults + $children;
 $types .= "i";
 
+// Add condition to show only available rooms
+$where_conditions[] = "r.status = 'available' AND NOT EXISTS (
+    SELECT 1 FROM bookings b 
+    WHERE b.room_id = r.id   
+    AND b.booking_status IN ('pending', 'confirmed')
+    AND (
+        (b.check_in_date <= ? AND b.check_out_date >= ?) OR
+        (b.check_in_date <= ? AND b.check_out_date >= ?) OR
+        (b.check_in_date >= ? AND b.check_out_date <= ?)
+    )
+)";
+
+// Add the date parameters for the availability check
+if (!empty($check_in) && !empty($check_out)) {
+    $params = array_merge($params, [
+        $check_out, $check_in, // First date range
+        $check_in, $check_out, // Second date range
+        $check_in, $check_out  // Third date range
+    ]);
+    $types .= "ssssss";
+}
+
 if (!empty($where_conditions)) {
     $sql .= " WHERE " . implode(" AND ", $where_conditions);
 }
